@@ -5,6 +5,8 @@ import openmedstack.MessageHeaders;
 import openmedstack.commands.CommandResponse;
 import openmedstack.commands.DomainCommand;
 import openmedstack.commands.IHandleCommands;
+import org.openmedstack.eventstore.DuplicateCommitException;
+import org.openmedstack.eventstore.Repository;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -44,11 +46,11 @@ public abstract class CommandHandlerBase<T extends DomainCommand> implements IHa
 
     protected abstract CompletableFuture<CommandResponse> handleInternal(T command, MessageHeaders headers);
 
-    protected <TAggregate extends Aggregate> CompletableFuture<TAggregate> get(String id) {
-        return _repository.getById(id);
+    protected <TAggregate extends Aggregate> CompletableFuture<TAggregate> get(Class<TAggregate> type, String id) {
+        return _repository.getById(type, id);
     }
 
-    protected <TAggregate extends Aggregate> CompletableFuture<Boolean> save(TAggregate aggregate) {
+    protected <TAggregate extends Aggregate> CompletableFuture<Boolean> save(TAggregate aggregate) throws DuplicateCommitException {
         return _repository.save(aggregate, h -> { });
     }
 }

@@ -3,6 +3,9 @@ package org.openmedstack.domain;
 import openmedstack.MessageHeaders;
 import openmedstack.events.BaseEvent;
 import openmedstack.events.IHandleEvents;
+import org.openmedstack.Tuple;
+import org.openmedstack.eventstore.SagaRepository;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -19,19 +22,20 @@ public abstract class SagaDomainEventHandlerBase<TSaga extends Saga, TBaseEvent 
                         e -> _repository
                                 .getById(e.getCorrelationId())
                                 .thenApplyAsync(s -> new Tuple<Saga, TBaseEvent>(s, e)))
-                .thenApplyAsync(
-                        t -> t.thenApplyAsync(tuple -> {
-                            tuple.a.transition(tuple.b);
-                            return tuple;
-                        }))
-                .thenApplyAsync(t -> t.thenApply(tuple -> {
-                    _repository.save(tuple.a, o -> {
-                    });
-                    return afterHandle(tuple.b, headers);
-                }));
+                .thenCompose(
+                        t -> {
+                            try {
+                                while (!t.isDone()) {
+                                }
+                                Tuple<Saga, TBaseEvent> tuple = t.get();
+                                tuple.a.transition(tuple.b);
+                                return _repository.save(tuple.a, m -> {})
+                                        .thenComposeAsync(x -> afterHandle(tuple.b, headers));
+                            } catch (HandlerForDomainEventNotFoundException | InterruptedException | ExecutionException e) {
+                                return CompletableFuture.completedFuture(null);
+                            }
+                        });
     }
-
-
 
     protected CompletableFuture<TBaseEvent> beforeHandle(TBaseEvent message, MessageHeaders headers) {
         return CompletableFuture.completedFuture(message);

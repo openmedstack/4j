@@ -11,11 +11,3 @@ public interface IRouteEvents {
 
     CompletableFuture dispatch(Object eventMessage) throws HandlerForDomainEventNotFoundException;
 }
-//
-//public interface IDetectConflicts
-//{
-//    <TUncommitted, TCommitted> void Register(Function<Pair<TUncommitted, TCommitted>, Boolean> handler)
-//    //where TUncommitted : class where TCommitted : class;
-//
-//    Boolean ConflictsWith(Iterable<Object> uncommittedEvents, Iterable<Object> committedEvents);
-//}
