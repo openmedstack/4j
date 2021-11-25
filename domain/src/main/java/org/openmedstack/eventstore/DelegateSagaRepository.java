@@ -14,15 +14,14 @@ public class DelegateSagaRepository implements SagaRepository {
     private final IStoreEvents _eventStore;
     private final IConstructSagas _factory;
 
-    public DelegateSagaRepository(IProvideTenant tenantId, IStoreEvents eventStore, IConstructSagas factory)
-    {
+    public DelegateSagaRepository(IProvideTenant tenantId, IStoreEvents eventStore, IConstructSagas factory) {
         _tenantId = tenantId;
         _eventStore = eventStore;
         _factory = factory;
     }
 
     @Override
-    public <TSaga extends Saga> CompletableFuture<TSaga> getById(Class<TSaga> type,String sagaId) {
+    public <TSaga extends Saga> CompletableFuture<TSaga> getById(Class<TSaga> type, String sagaId) {
         return openStream(_tenantId.getTenantName(), sagaId, Integer.MAX_VALUE).thenApplyAsync(stream -> {
             try {
                 return buildSaga(type, sagaId, stream);
@@ -51,42 +50,35 @@ public class DelegateSagaRepository implements SagaRepository {
         });
     }
 
-    private CompletableFuture<IEventStream> openStream(String bucketId, String sagaId, int maxVersion)
-    {
+    private CompletableFuture<IEventStream> openStream(String bucketId, String sagaId, int maxVersion) {
         CompletableFuture<IEventStream> eventStream;
-        try
-        {
+        try {
             eventStream = _eventStore.openStream(bucketId, sagaId, 0, maxVersion);
-        }
-        catch (StreamNotFoundException)
-        {
-            eventStream =  _eventStore.createStream(bucketId, sagaId);
+        } catch (StreamNotFoundException s) {
+            eventStream = _eventStore.createStream(bucketId, sagaId);
         }
         return eventStream;
     }
 
-    private <TSaga extends Saga> TSaga buildSaga(Class<TSaga> type, String sagaId, IEventStream stream) throws HandlerForDomainEventNotFoundException
-    {
-        var saga = (TSaga)_factory.build(type, sagaId);
-        for (var x : stream.getCommittedEvents()){
+    private <TSaga extends Saga> TSaga buildSaga(Class<TSaga> type, String sagaId, IEventStream stream) throws HandlerForDomainEventNotFoundException {
+        var saga = (TSaga) _factory.build(type, sagaId);
+        for (var x : stream.getCommittedEvents()) {
             saga.transition(x.getBody());
-    }
+        }
 
         saga.clearUncommittedEvents();
         saga.clearUndispatchedMessages();
         return saga;
     }
 
-    private static HashMap<String, Object> PrepareHeaders(Saga saga, Consumer<HashMap<String, Object>> updateHeaders)
-    {
+    private static HashMap<String, Object> PrepareHeaders(Saga saga, Consumer<HashMap<String, Object>> updateHeaders) {
         var dictionary = new HashMap<String, Object>();
         dictionary.put("SagaType", saga.getClass().getTypeName());
-    if(updateHeaders!= null){
-        updateHeaders.accept(dictionary);
-    }
+        if (updateHeaders != null) {
+            updateHeaders.accept(dictionary);
+        }
         int num = 0;
-        for (var undispatchedMessage : saga.getUndispatchedMessages())
-        {
+        for (var undispatchedMessage : saga.getUndispatchedMessages()) {
             dictionary.put("UndispatchedMessage." + num++, undispatchedMessage);
         }
         return dictionary;
@@ -108,14 +100,10 @@ public class DelegateSagaRepository implements SagaRepository {
                 });
     }
 
-    private CompletableFuture persist(IEventStream stream, UUID commitId) throws ConcurrencyException
-    {
-        try
-        {
+    private CompletableFuture persist(IEventStream stream, UUID commitId) throws ConcurrencyException {
+        try {
             return stream.commitChanges(commitId);
-        }
-        catch (DuplicateCommitException ex)
-        {
+        } catch (DuplicateCommitException ex) {
             stream.clearChanges();
         }
         return CompletableFuture.completedFuture(true);

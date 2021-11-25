@@ -46,7 +46,7 @@ public class OptimisticEventStream implements IEventStream {
                 });
     }
 
-    private static IEventStream populateStream(String bucketId, String streamId, ICommitEvents persistence, int minRevision, int maxRevision, Iterable<ICommit> commits) throws StreamNotFoundException{
+    private static IEventStream populateStream(String bucketId, String streamId, ICommitEvents persistence, int minRevision, int maxRevision, Iterable<Commit> commits) throws StreamNotFoundException{
         var instance = Create(bucketId, streamId, persistence);
         instance.populateStream(minRevision, maxRevision, commits);
 
@@ -76,7 +76,7 @@ public class OptimisticEventStream implements IEventStream {
                 });
     }
 
-    private void populateStream(int minRevision, int maxRevision, Iterable<ICommit> commits) {
+    private void populateStream(int minRevision, int maxRevision, Iterable<Commit> commits) {
         if (commits == null) {
             return;
         }
@@ -94,13 +94,13 @@ public class OptimisticEventStream implements IEventStream {
         }
     }
 
-    private void CopyToCommittedHeaders(ICommit commit) {
+    private void CopyToCommittedHeaders(Commit commit) {
         for (var key : commit.getHeaders().keySet()) {
             getCommittedHeaders().put(key, commit.getHeaders().get(key));
         }
     }
 
-    private void CopyToEvents(int minRevision, int maxRevision, int currentRevision, ICommit commit) {
+    private void CopyToEvents(int minRevision, int maxRevision, int currentRevision, Commit commit) {
         for (var evt : commit.getEvents()) {
             if (currentRevision > maxRevision) {
                 break;

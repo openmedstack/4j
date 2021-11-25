@@ -46,21 +46,21 @@ public class HttpEventStore implements IStoreEvents, ICommitEvents {
     }
 
     @Override
-    public CompletableFuture<Iterable<ICommit>> getFrom(String bucketId, String streamId, int minRevision, int maxRevision) {
+    public CompletableFuture<Iterable<Commit>> getFrom(String bucketId, String streamId, int minRevision, int maxRevision) {
         var request = HttpRequest.newBuilder(URI.create("")).GET().build();
         return _persistence.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(HttpResponse::body)
                 .thenApplyAsync(c -> {
                     try {
-                        return _mapper.readValue(c, ICommit[].class);
+                        return _mapper.readValue(c, Commit[].class);
                     } catch (JsonProcessingException e) {
                     }
-                    return new ICommit[0];
+                    return new Commit[0];
                 }).thenApplyAsync(c -> List.of(c));
     }
 
     @Override
-    public CompletableFuture<ICommit> commit(CommitAttempt attempt) {
+    public CompletableFuture<Commit> commit(CommitAttempt attempt) {
         try{
             var json = _mapper.writeValueAsString(attempt);
         var request = HttpRequest.newBuilder(URI.create("")).POST(HttpRequest.BodyPublishers.ofString(json)).build();
@@ -68,7 +68,7 @@ public class HttpEventStore implements IStoreEvents, ICommitEvents {
                 .thenApplyAsync(HttpResponse::body)
                 .thenApplyAsync(c -> {
                     try {
-                        return _mapper.readValue(c, ICommit.class);
+                        return _mapper.readValue(c, Commit.class);
                     } catch (JsonProcessingException e) {
                         e.printStackTrace();
                     }
@@ -79,4 +79,3 @@ public class HttpEventStore implements IStoreEvents, ICommitEvents {
         }
     }
 }
-

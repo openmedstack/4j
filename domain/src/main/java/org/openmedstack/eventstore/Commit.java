@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-public interface ICommit {
+public interface Commit {
     String getBucketId();
 
     String getStreamId();

@@ -1,7 +1,10 @@
-import java.time.Instant;
-import java.util.concurrent.Future;
+package openmedstack.commands;
 
-public abstract class DomainCommand {
+import openmedstack.ICorrelate;
+
+import java.time.Instant;
+
+public abstract class DomainCommand implements ICorrelate {
     private final Instant _timestamp;
     private final String _aggregateId;
     private final Integer _version;

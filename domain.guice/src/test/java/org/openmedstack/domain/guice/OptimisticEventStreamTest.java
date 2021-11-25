@@ -1,12 +1,11 @@
 package org.openmedstack.domain.guice;
 
-import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.openmedstack.eventstore.CommitAttempt;
-import org.openmedstack.eventstore.ICommit;
+import org.openmedstack.eventstore.Commit;
 import org.openmedstack.eventstore.ICommitEvents;
 
 import java.util.List;
@@ -26,12 +25,12 @@ public class OptimisticEventStreamTest {
     public void canCreateInstance() {
         var instance = OptimisticEventStream.Create("bucket", "stream", new ICommitEvents() {
             @Override
-            public CompletableFuture<Iterable<ICommit>> getFrom(String bucketId, String streamId, int minRevision, int maxRevision) {
+            public CompletableFuture<Iterable<Commit>> getFrom(String bucketId, String streamId, int minRevision, int maxRevision) {
                 return null;
             }
 
             @Override
-            public CompletableFuture<ICommit> commit(CommitAttempt attempt) {
+            public CompletableFuture<Commit> commit(CommitAttempt attempt) {
                 return null;
             }
         });
@@ -42,12 +41,12 @@ public class OptimisticEventStreamTest {
     public void canCreateFutureInstance() {
         var future = OptimisticEventStream.Create("bucket", "stream", new ICommitEvents() {
             @Override
-            public CompletableFuture<Iterable<ICommit>> getFrom(String bucketId, String streamId, int minRevision, int maxRevision) {
-                return CompletableFuture.completedFuture(List.of(new ICommit[0]));
+            public CompletableFuture<Iterable<Commit>> getFrom(String bucketId, String streamId, int minRevision, int maxRevision) {
+                return CompletableFuture.completedFuture(List.of(new Commit[0]));
             }
 
             @Override
-            public CompletableFuture<ICommit> commit(CommitAttempt attempt) {
+            public CompletableFuture<Commit> commit(CommitAttempt attempt) {
                 return null;
             }
         }, 0, Integer.MAX_VALUE);
