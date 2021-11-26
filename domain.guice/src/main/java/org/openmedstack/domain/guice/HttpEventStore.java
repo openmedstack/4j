@@ -14,8 +14,10 @@ import java.util.concurrent.CompletableFuture;
 public class HttpEventStore implements IStoreEvents, ICommitEvents {
     private final HttpClient _persistence;
     private final ObjectMapper _mapper;
+    private final URI _baseAddress;
 
-    public HttpEventStore(ObjectMapper mapper) {
+    public HttpEventStore(ObjectMapper mapper, URI baseAddress) {
+        _baseAddress = baseAddress;
         _persistence = HttpClient.newHttpClient();
         _mapper = mapper;
     }
@@ -42,12 +44,15 @@ public class HttpEventStore implements IStoreEvents, ICommitEvents {
 
     @Override
     public void close() throws Exception {
-
     }
 
     @Override
     public CompletableFuture<Iterable<Commit>> getFrom(String bucketId, String streamId, int minRevision, int maxRevision) {
-        var request = HttpRequest.newBuilder(URI.create("")).GET().build();
+        var request = HttpRequest.newBuilder(
+                        URI.create(String.format("/%s/%s/%d/%d", bucketId, streamId, minRevision, maxRevision))
+                                .relativize(_baseAddress))
+                .GET()
+                .build();
         return _persistence.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(HttpResponse::body)
                 .thenApplyAsync(c -> {
@@ -63,7 +68,7 @@ public class HttpEventStore implements IStoreEvents, ICommitEvents {
     public CompletableFuture<Commit> commit(CommitAttempt attempt) {
         try{
             var json = _mapper.writeValueAsString(attempt);
-        var request = HttpRequest.newBuilder(URI.create("")).POST(HttpRequest.BodyPublishers.ofString(json)).build();
+        var request = HttpRequest.newBuilder(_baseAddress).POST(HttpRequest.BodyPublishers.ofString(json)).build();
         return _persistence.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApplyAsync(HttpResponse::body)
                 .thenApplyAsync(c -> {
