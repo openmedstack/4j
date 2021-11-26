@@ -1,6 +1,6 @@
 package org.openmedstack.domain;
 
-import openmedstack.events.DomainEvent;
+import org.openmedstack.events.DomainEvent;
 
 import java.util.List;
 

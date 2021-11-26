@@ -2,6 +2,7 @@ package org.openmedstack.domain.guice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 import org.openmedstack.eventstore.*;
 
 import java.net.URI;
@@ -15,6 +16,7 @@ public class HttpEventStore implements IStoreEvents, ICommitEvents {
     private final HttpClient _persistence;
     private final ObjectMapper _mapper;
 
+    @Inject
     public HttpEventStore(ObjectMapper mapper) {
         _persistence = HttpClient.newHttpClient();
         _mapper = mapper;
