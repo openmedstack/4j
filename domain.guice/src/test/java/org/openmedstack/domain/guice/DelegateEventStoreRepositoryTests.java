@@ -2,7 +2,7 @@ package org.openmedstack.domain.guice;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
-import openmedstack.IProvideTenant;
+import org.openmedstack.IProvideTenant;
 import org.junit.Assert;
 import org.junit.Test;
 import org.openmedstack.eventstore.ConflictDetector;

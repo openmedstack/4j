@@ -1,10 +1,9 @@
 package org.openmedstack.eventstore;
 
-import openmedstack.IProvideTenant;
+import org.openmedstack.IProvideTenant;
 import org.openmedstack.domain.Aggregate;
 import org.openmedstack.domain.HandlerForDomainEventNotFoundException;
 import org.openmedstack.domain.Memento;
-import org.openmedstack.domain.Saga;
 
 import java.util.*;
 import java.util.concurrent.*;

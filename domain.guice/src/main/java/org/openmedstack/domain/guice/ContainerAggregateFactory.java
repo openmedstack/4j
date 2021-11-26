@@ -1,5 +1,6 @@
 package org.openmedstack.domain.guice;
 
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.openmedstack.domain.Aggregate;
 import org.openmedstack.domain.Memento;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 class ContainerAggregateFactory implements IConstructAggregates {
     private final Injector _container;
 
+    @Inject
     public ContainerAggregateFactory(Injector container){
         _container = container;
     }

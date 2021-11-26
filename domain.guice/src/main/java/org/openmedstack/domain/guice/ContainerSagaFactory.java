@@ -1,5 +1,6 @@
 package org.openmedstack.domain.guice;
 
+import com.google.inject.Inject;
 import com.google.inject.Injector;
 import org.openmedstack.domain.Saga;
 import org.openmedstack.eventstore.IConstructSagas;
@@ -10,6 +11,7 @@ import java.util.Arrays;
 class ContainerSagaFactory implements IConstructSagas {
     private final Injector _container;
 
+    @Inject
     public ContainerSagaFactory(Injector container) {
         _container = container;
     }

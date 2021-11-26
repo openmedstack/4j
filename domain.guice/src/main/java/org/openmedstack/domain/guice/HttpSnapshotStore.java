@@ -2,6 +2,7 @@ package org.openmedstack.domain.guice;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.inject.Inject;
 import org.openmedstack.eventstore.IAccessSnapshots;
 import org.openmedstack.eventstore.Snapshot;
 
@@ -15,6 +16,7 @@ public class HttpSnapshotStore implements IAccessSnapshots {
     private final ObjectMapper _mapper;
     private final HttpClient _persistence;
 
+    @Inject
     public HttpSnapshotStore(ObjectMapper mapper) {
         _mapper = mapper;
         _persistence = HttpClient.newHttpClient();

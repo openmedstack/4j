@@ -1,10 +1,10 @@
 package org.openmedstack.domain;
 
-import openmedstack.IValidateTokens;
-import openmedstack.MessageHeaders;
-import openmedstack.commands.CommandResponse;
-import openmedstack.commands.DomainCommand;
-import openmedstack.commands.IHandleCommands;
+import org.openmedstack.IValidateTokens;
+import org.openmedstack.MessageHeaders;
+import org.openmedstack.commands.CommandResponse;
+import org.openmedstack.commands.DomainCommand;
+import org.openmedstack.commands.IHandleCommands;
 import org.openmedstack.eventstore.DuplicateCommitException;
 import org.openmedstack.eventstore.Repository;
 

@@ -1,6 +1,6 @@
 package org.openmedstack.eventstore;
 
-import openmedstack.IProvideTenant;
+import org.openmedstack.IProvideTenant;
 import org.openmedstack.domain.HandlerForDomainEventNotFoundException;
 import org.openmedstack.domain.Saga;
 
@@ -52,11 +52,11 @@ public class DelegateSagaRepository implements SagaRepository {
 
     private CompletableFuture<IEventStream> openStream(String bucketId, String sagaId, int maxVersion) {
         CompletableFuture<IEventStream> eventStream;
-        try {
+        //try {
             eventStream = _eventStore.openStream(bucketId, sagaId, 0, maxVersion);
-        } catch (StreamNotFoundException s) {
-            eventStream = _eventStore.createStream(bucketId, sagaId);
-        }
+//        } catch (StreamNotFoundException s) {
+//            eventStream = _eventStore.createStream(bucketId, sagaId);
+//        }
         return eventStream;
     }
 

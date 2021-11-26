@@ -1,7 +1,7 @@
 package org.openmedstack.domain;
 
-import openmedstack.commands.DomainCommand;
-import openmedstack.events.BaseEvent;
+import org.openmedstack.commands.DomainCommand;
+import org.openmedstack.events.BaseEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Consumer;

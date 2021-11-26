@@ -1,6 +1,6 @@
 package org.openmedstack.domain;
 
-import openmedstack.events.BaseEvent;
+import org.openmedstack.events.BaseEvent;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
