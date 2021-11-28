@@ -10,7 +10,6 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.util.concurrent.CompletableFuture
-import kotlin.math.min
 
 class HttpEventStore @Inject constructor(mapper: ObjectMapper) : IStoreEvents, ICommitEvents {
     private val _persistence: HttpClient = HttpClient.newHttpClient()
