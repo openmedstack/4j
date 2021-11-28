@@ -1,3 +1,5 @@
+package org.openmedstack.messaging.inmemory
+
 import org.openmedstack.commands.CommandResponse
 import org.openmedstack.commands.DomainCommand
 import org.openmedstack.commands.IRouteCommands

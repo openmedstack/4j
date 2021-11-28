@@ -1,3 +1,5 @@
+package org.openmedstack.messaging.inmemory
+
 import junit.framework.TestCase
 import org.junit.Assert
 import org.junit.Test
@@ -19,5 +21,3 @@ class InMemoryRouterTest : TestCase() {
     }
 }
 
-class TestCommand constructor(aggregateId: String, version: Int) :
-    DomainCommand(aggregateId, version, Instant.now(), null) {}
