@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets
 class RabbitMqRouter(private val _connection: Channel) : IRouteCommands {
     override fun <T : DomainCommand> send(
         command: T,
-        headers: HashMap<String, Any>?
+        headers: HashMap<String, Any>
     ): CompletableFuture<CommandResponse> {
         return try {
             _connection.basicPublish("", "", true, AMQP.BasicProperties(), "".toByteArray(StandardCharsets.UTF_8))

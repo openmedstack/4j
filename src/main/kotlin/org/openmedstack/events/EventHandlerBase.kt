@@ -6,15 +6,15 @@ import java.lang.reflect.Type
 import java.util.concurrent.CompletableFuture
 import kotlin.reflect.KClass
 
-abstract class EventHandlerBase<T : BaseEvent?> : IHandleEvents<T> {
-    final override fun canHandle(type: Class<*>): Boolean {
+abstract class EventHandlerBase<T> : IHandleEvents where T: BaseEvent {
+    final override fun <T> canHandle(type: Class<T>): Boolean where T: BaseEvent{
         return Class.forName(javaClass.typeParameters[0].name).isAssignableFrom(type)
     }
 
-    override fun handle(evt: T, headers: MessageHeaders): CompletableFuture<*> {
+    override fun handle(evt: BaseEvent, headers: MessageHeaders): CompletableFuture<*> {
         return verifyUserToken(headers.userToken).thenApply { b: Boolean ->
             if (b) {
-                return@thenApply handleInternal(evt, headers)
+                return@thenApply handleInternal(evt as T, headers)
             } else {
                 return@thenApply CompletableFuture<Any>()
             }

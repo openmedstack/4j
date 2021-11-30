@@ -19,12 +19,12 @@ class DefaultService(vararg modules: Module?) : Service {
 
     override fun <T : DomainCommand> send(command: T): CompletableFuture<CommandResponse> {
         val sender = injector.getInstance(IRouteCommands::class.java)
-        return sender.send(command, null)
+        return sender.send(command, HashMap())
     }
 
     override fun <T : BaseEvent> publish(msg: T): CompletableFuture<*> {
         val sender = injector.getInstance(IPublishEvents::class.java)
-        return sender.publish(msg, null)
+        return sender.publish(msg, HashMap())
     }
 
     override fun <T : Any> resolve(type: Class<T>): T {

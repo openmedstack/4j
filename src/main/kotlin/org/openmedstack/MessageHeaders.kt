@@ -1,5 +1,5 @@
 package org.openmedstack
 
-interface MessageHeaders : MutableMap<String, Any?> {
+interface MessageHeaders : Map<String, Any> {
     val userToken: String?
 }

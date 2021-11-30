@@ -1,7 +1,7 @@
 package org.openmedstack
 
-class MessageHeadersImpl(vararg items: Map.Entry<String, Any?>) : MessageHeaders {
-    private val _headers: MutableMap<String, Any?>
+class MessageHeadersImpl(items: Map<String, Any>) : MessageHeaders {
+    private val _headers: MutableMap<String, Any>
 
     override val userToken: String?
         get() = _headers["token"] as String?
@@ -17,7 +17,7 @@ class MessageHeadersImpl(vararg items: Map.Entry<String, Any?>) : MessageHeaders
         return _headers.containsKey(key)
     }
 
-    override fun containsValue(value: Any?): Boolean {
+    override fun containsValue(value: Any): Boolean {
         return _headers.containsValue(value)
     }
 
@@ -25,32 +25,16 @@ class MessageHeadersImpl(vararg items: Map.Entry<String, Any?>) : MessageHeaders
         return _headers[key]
     }
 
-    override fun put(key: String, value: Any?): Any? {
-        return _headers.put(key, value)
-    }
-
-    override fun remove(key: String): Any? {
-        return _headers.remove(key)
-    }
-
-    override fun putAll(from: Map<out String, Any?>) {
-        _headers.putAll(from)
-    }
-
-    override fun clear() {
-        _headers.clear()
-    }
-
     override val keys: MutableSet<String>
         get()= _headers.keys
 
-    override val values: MutableCollection<Any?>
+    override val values: MutableCollection<Any>
         get() = _headers.values
 
-    override val entries : MutableSet<MutableMap.MutableEntry<String, Any?>>
+    override val entries : MutableSet<MutableMap.MutableEntry<String, Any>>
         get() = _headers.entries
 
     init {
-        _headers = java.util.Map.ofEntries(*items)
+        _headers = items.toMutableMap()
     }
 }

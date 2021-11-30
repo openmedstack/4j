@@ -1,32 +1,27 @@
-package org.openmedstack.messaging.inmemory
+package org.openmedstack
 
 import junit.framework.TestCase
 import org.junit.Assert
 import org.junit.Test
-import org.openmedstack.MessageHeaders
 import org.openmedstack.commands.CommandResponse
 import org.openmedstack.commands.DomainCommand
 import org.openmedstack.commands.IHandleCommands
 import java.util.concurrent.CompletableFuture
 
-class InMemoryRouterTest : TestCase() {
-
-    public override fun setUp() {
-        super.setUp()
-    }
-
+class ReflectionToolTest : TestCase() {
     @Test
-    fun testSend() {
-        var router = InMemoryRouter(setOf(TestCommandHandler() as IHandleCommands))
-        var result = router.send(TestCommand("test", 1), HashMap()).get()
+    fun testGetTypeParameter() {
+        val handler = TestHandler()
+        var type = ReflectionTool.Companion.getTypeParameter(handler, IHandleCommands::class.java)
 
-        Assert.assertNull(result.faultMessage)
+        Assert.assertTrue(handler is IHandleCommands)
+        Assert.assertEquals(DomainCommand::class.java, type)
     }
 }
 
-class TestCommandHandler : IHandleCommands {
+class TestHandler : IHandleCommands {
     override fun <T> canHandle(type: Class<T>): Boolean where T: DomainCommand {
-        return TestCommand::class.java.isAssignableFrom(type)
+        return true
     }
 
     override fun handle(command: DomainCommand, messageHeaders: MessageHeaders): CompletableFuture<CommandResponse> {

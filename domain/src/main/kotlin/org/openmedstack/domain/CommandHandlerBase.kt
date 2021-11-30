@@ -10,20 +10,20 @@ import org.openmedstack.eventstore.Repository
 import org.openmedstack.eventstore.Snapshot
 import java.util.concurrent.CompletableFuture
 
-abstract class CommandHandlerBase<T : DomainCommand> protected constructor(private val _repository: Repository, private val _tokenValidator: IValidateTokens) : IHandleCommands<T> {
-    override fun handle(command: T, messageHeaders: MessageHeaders): CompletableFuture<CommandResponse> {
+abstract class CommandHandlerBase protected constructor(private val _repository: Repository, private val _tokenValidator: IValidateTokens) : IHandleCommands {
+    override fun handle(command: DomainCommand, messageHeaders: MessageHeaders): CompletableFuture<CommandResponse> {
         return _tokenValidator.validate(messageHeaders.userToken)
             .thenComposeAsync { userToken: String? -> createResponse(userToken, command, messageHeaders) }
     }
 
     private fun createResponse(
         userToken: String?,
-        command: T,
+        command: DomainCommand,
         headers: MessageHeaders?
     ): CompletableFuture<CommandResponse?> {
         return verifyUserToken(userToken).thenComposeAsync { b: Boolean ->
             if (b) handleInternal(command, headers)
-            else CompletableFuture.completedFuture(CommandResponse.error(command as DomainCommand, "Invalid token"))
+            else CompletableFuture.completedFuture(CommandResponse.error(command, "Invalid token"))
         }
     }
 
@@ -31,7 +31,7 @@ abstract class CommandHandlerBase<T : DomainCommand> protected constructor(priva
         return CompletableFuture.supplyAsync { true }
     }
 
-    protected abstract fun handleInternal(command: T, headers: MessageHeaders?): CompletableFuture<CommandResponse>
+    protected abstract fun handleInternal(command: DomainCommand, headers: MessageHeaders?): CompletableFuture<CommandResponse>
 
     protected operator fun <TAggregate : Aggregate, TMemento : Memento> get(
         type: Class<TAggregate>,

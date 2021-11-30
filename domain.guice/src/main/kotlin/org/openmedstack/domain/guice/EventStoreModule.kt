@@ -1,9 +1,16 @@
 package org.openmedstack.domain.guice
 
 import com.google.inject.AbstractModule
+import com.google.inject.Scope
+import com.google.inject.multibindings.Multibinder
 import org.openmedstack.IProvideTenant
+import org.openmedstack.MessageHeaders
+import org.openmedstack.commands.CommandResponse
+import org.openmedstack.commands.DomainCommand
+import org.openmedstack.commands.IHandleCommands
 import org.openmedstack.eventstore.*
 import java.lang.reflect.Constructor
+import java.util.concurrent.CompletableFuture
 
 class EventStoreModule : AbstractModule() {
     override fun configure() {

@@ -89,12 +89,12 @@ class ChassisTest {
 
             override fun <T : DomainCommand> send(command: T): CompletableFuture<CommandResponse> {
                 val router = injector.getInstance(IRouteCommands::class.java)
-                return router.send(command, null)
+                return router.send(command, HashMap())
             }
 
             override fun <T : BaseEvent> publish(msg: T): CompletableFuture<*> {
                 val publisher = injector.getInstance(IPublishEvents::class.java)
-                return publisher.publish(msg, null)
+                return publisher.publish(msg, HashMap())
             }
 
             override fun <T : Any> resolve(type: Class<T>): T {
