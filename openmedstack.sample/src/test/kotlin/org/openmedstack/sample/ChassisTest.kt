@@ -76,10 +76,8 @@ class ChassisTest {
     }
 
     private fun getService(c: DeploymentConfiguration): Service {
-        val module = Module { binder -> binder.bind(String::class.java).toInstance("test") }
         return object : Service {
             var injector = Guice.createInjector(
-                module,
                 EventStoreModule(),
                 InMemoryMessagingModule(),
                 TestModule()

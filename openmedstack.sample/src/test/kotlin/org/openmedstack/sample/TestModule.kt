@@ -8,6 +8,7 @@ import org.openmedstack.events.IHandleEvents
 class TestModule : AbstractModule() {
     override fun configure() {
         super.configure()
+        bind(String::class.java).toInstance("test")
         val commandHandlerSet = Multibinder.newSetBinder(binder(), IHandleCommands::class.java)
         commandHandlerSet.addBinding().to(TestCommandHandler::class.java)
         val eventHandlerSet = Multibinder.newSetBinder(binder(), IHandleEvents::class.java)
