@@ -6,7 +6,6 @@ import org.openmedstack.commands.IHandleCommands
 import org.openmedstack.events.IHandleEvents
 
 class TestModule : AbstractModule() {
-    @OptIn(ExperimentalStdlibApi::class)
     override fun configure() {
         super.configure()
 
