@@ -16,6 +16,7 @@ import org.openmedstack.domain.guice.EventStoreModule
 import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IPublishEvents
 import org.openmedstack.eventstore.DelegateAggregateRepository
+import org.openmedstack.messaging.inmemory.guice.InMemoryMessagingModule
 import java.net.URI
 import java.util.concurrent.CompletableFuture
 
@@ -41,13 +42,13 @@ class ChassisTest {
 
     @Test
     fun start() {
-        chassis!!.usingCustomBuilder { c: DeploymentConfiguration -> getService(c) }
+        chassis!!.withBuilder { c: DeploymentConfiguration -> getService(c) }
         chassis!!.start()
     }
 
     @Test
     fun send() {
-        chassis!!.usingCustomBuilder { c: DeploymentConfiguration -> getService(c) }
+        chassis!!.withBuilder { c: DeploymentConfiguration -> getService(c) }
         chassis!!.start()
         val s = chassis!!.send(TestCommand("test"))
         Assert.assertTrue(s is CompletableFuture<*>)
@@ -59,7 +60,7 @@ class ChassisTest {
 
     @Test
     fun resolve() {
-        chassis!!.usingCustomBuilder { c: DeploymentConfiguration -> getService(c) }
+        chassis!!.withBuilder { c: DeploymentConfiguration -> getService(c) }
         chassis!!.start()
         val s = chassis!!.resolve(String::class.java)
         Assert.assertTrue(s is String)
@@ -80,7 +81,8 @@ class ChassisTest {
             var injector = Guice.createInjector(
                 module,
                 EventStoreModule(),
-                org.openmedstack.messaging.rabbitmq.guice.RabbitMqModule(c)
+                InMemoryMessagingModule(),
+                TestModule()
             )
 
             override fun start(): CompletableFuture<*> {

@@ -20,6 +20,7 @@ class EventStoreModule : AbstractModule() {
         bind(IAccessSnapshots::class.java).to(HttpSnapshotStore::class.java)
         bind(Repository::class.java).toConstructor(
             DelegateAggregateRepository::class.java.getConstructor(
+                IProvideTenant::class.java,
                 IStoreEvents::class.java,
                 IAccessSnapshots::class.java,
                 IConstructAggregates::class.java

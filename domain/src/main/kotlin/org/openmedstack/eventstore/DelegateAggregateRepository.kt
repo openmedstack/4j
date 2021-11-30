@@ -16,7 +16,7 @@ class DelegateAggregateRepository(
         private val _snapshotStore: IAccessSnapshots,
         private val _factory: IConstructAggregates) : Repository {
     override fun <TAggregate : Aggregate, TMemento : Memento> getById(type: Class<TAggregate>, mementoType: Class<Snapshot<TMemento>>, id: String): CompletableFuture<TAggregate> {
-        return getById<TAggregate, TMemento>(type, mementoType, id, Int.MAX_VALUE)
+        return getById(type, mementoType, id, Int.MAX_VALUE)
     }
 
     override fun <TAggregate : Aggregate, TMemento : Memento> getById(

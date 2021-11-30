@@ -10,12 +10,8 @@ class Chassis private constructor(val configuration: DeploymentConfiguration) : 
     private val _metadata: HashMap<String, Any> = HashMap()
     private var _builder: Function<DeploymentConfiguration, Service>? = null
     private var _service: Service? = null
-    fun usingCustomBuilder(builder: Function<DeploymentConfiguration, Service>?): Chassis {
-        _builder = builder
-        return this
-    }
 
-    fun start(): CompletableFuture<*>? {
+    fun start(): CompletableFuture<*> {
         if (_service != null) {
             return CompletableFuture.completedFuture(true)
         }
@@ -40,14 +36,14 @@ class Chassis private constructor(val configuration: DeploymentConfiguration) : 
     }
 
     @Throws(NullPointerException::class)
-    fun <T : Any> resolve(type: Class<T>): T {
+    fun <T> resolve(type: Class<T>): T where T: Any {
         if (_service == null) {
             throw NullPointerException("Chassis not started")
         }
         return _service!!.resolve(type)
     }
 
-    fun setBuilder(builder: Function<DeploymentConfiguration, Service>): Chassis {
+    fun withBuilder(builder: Function<DeploymentConfiguration, Service>): Chassis {
         _builder = builder
         return this
     }
@@ -65,5 +61,4 @@ class Chassis private constructor(val configuration: DeploymentConfiguration) : 
             return Chassis(manifest)
         }
     }
-
 }
