@@ -12,22 +12,11 @@
         <module>domain.guice</module>
         <module>openmedstack.sample</module>
         <module>messaging.rabbitmq.guice</module>
-        <module>messaging.inmemory</module>
+        <module>messaging</module>
         <module>messaging.rabbitmq</module>
-        <module>messaging.inmemory.guice</module>
+        <module>messaging.guice</module>
     </modules>
     <dependencies>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.javatuples</groupId>
-            <artifactId>javatuples</artifactId>
-            <version>1.2</version>
-        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

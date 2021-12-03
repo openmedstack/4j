@@ -13,12 +13,6 @@
     <artifactId>sample</artifactId>
     <dependencies>
         <dependency>
-            <groupId>org</groupId>
-            <artifactId>openmedstack</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.openmedstack</groupId>
             <artifactId>domain.guice</artifactId>
             <version>1.0-SNAPSHOT</version>
@@ -26,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.openmedstack</groupId>
-            <artifactId>messaging.inmemory.guice</artifactId>
+            <artifactId>messaging.guice</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
