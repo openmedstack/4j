@@ -46,7 +46,7 @@ abstract class SagaDomainEventHandlerBase<TSaga : Saga, TBaseEvent : BaseEvent> 
 
     fun close() {}
 
-    override fun <T> canHandle(type: Class<T>): Boolean where T: BaseEvent {
+    override fun canHandle(type: Class<*>): Boolean {
         return try {
             Class.forName(javaClass.typeParameters[1].typeName).isAssignableFrom(type)
         } catch (e: ClassNotFoundException) {

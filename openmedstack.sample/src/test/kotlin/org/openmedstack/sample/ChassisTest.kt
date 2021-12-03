@@ -1,13 +1,11 @@
 package org.openmedstack.sample
 
 import com.google.inject.Guice
-import com.google.inject.Module
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.openmedstack.Chassis
 import org.openmedstack.DeploymentConfiguration
-import org.openmedstack.IProvideTenant
 import org.openmedstack.Service
 import org.openmedstack.commands.CommandResponse
 import org.openmedstack.commands.DomainCommand
@@ -15,8 +13,8 @@ import org.openmedstack.commands.IRouteCommands
 import org.openmedstack.domain.guice.EventStoreModule
 import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IPublishEvents
-import org.openmedstack.eventstore.DelegateAggregateRepository
-import org.openmedstack.messaging.inmemory.guice.InMemoryMessagingModule
+import org.openmedstack.messaging.guice.DomainModule
+import org.openmedstack.messaging.guice.InMemoryMessagingModule
 import java.net.URI
 import java.util.concurrent.CompletableFuture
 
@@ -42,13 +40,13 @@ class ChassisTest {
 
     @Test
     fun start() {
-        chassis!!.withBuilder { c: DeploymentConfiguration -> getService(c) }
+        chassis!!.withServiceBuilder{ c: DeploymentConfiguration, p : Set<Package> -> getService(c, p) }
         chassis!!.start()
     }
 
     @Test
     fun send() {
-        chassis!!.withBuilder { c: DeploymentConfiguration -> getService(c) }
+        chassis!!.withServiceBuilder { c: DeploymentConfiguration, p : Set<Package> -> getService(c, p) }
         chassis!!.start()
         val s = chassis!!.send(TestCommand("test"))
         Assert.assertTrue(s is CompletableFuture<*>)
@@ -60,7 +58,7 @@ class ChassisTest {
 
     @Test
     fun resolve() {
-        chassis!!.withBuilder { c: DeploymentConfiguration -> getService(c) }
+        chassis!!.withServiceBuilder { c,p -> getService(c,p) }
         chassis!!.start()
         val s = chassis!!.resolve(String::class.java)
         Assert.assertTrue(s is String)
@@ -75,9 +73,10 @@ class ChassisTest {
         }
     }
 
-    private fun getService(c: DeploymentConfiguration): Service {
+    private fun getService(c: DeploymentConfiguration, p: Set<Package>): Service {
         return object : Service {
             var injector = Guice.createInjector(
+                DomainModule(*p.toTypedArray()),
                 EventStoreModule(),
                 InMemoryMessagingModule(),
                 TestModule()

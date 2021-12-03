@@ -8,14 +8,15 @@ import java.util.function.Function
 
 class Chassis private constructor(val configuration: DeploymentConfiguration) : AutoCloseable {
     private val _metadata: HashMap<String, Any> = HashMap()
-    private var _builder: Function<DeploymentConfiguration, Service>? = null
+    private val _packages: ArrayList<Package> = ArrayList()
+    private var _builder: ((DeploymentConfiguration, Set<Package>) -> Service)? = null
     private var _service: Service? = null
 
     fun start(): CompletableFuture<*> {
         if (_service != null) {
             return CompletableFuture.completedFuture(true)
         }
-        _service = _builder!!.apply(configuration)
+        _service = _builder!!.invoke(configuration, _packages.toSet())
         return _service!!.start()
     }
 
@@ -36,15 +37,20 @@ class Chassis private constructor(val configuration: DeploymentConfiguration) : 
     }
 
     @Throws(NullPointerException::class)
-    fun <T> resolve(type: Class<T>): T where T: Any {
+    fun <T> resolve(type: Class<T>): T where T : Any {
         if (_service == null) {
             throw NullPointerException("Chassis not started")
         }
         return _service!!.resolve(type)
     }
 
-    fun withBuilder(builder: Function<DeploymentConfiguration, Service>): Chassis {
+    fun withServiceBuilder(builder: (DeploymentConfiguration, Set<Package>) -> Service): Chassis {
         _builder = builder
+        return this
+    }
+
+    fun definedIn(vararg packages: Package): Chassis {
+        _packages.addAll(packages)
         return this
     }
 

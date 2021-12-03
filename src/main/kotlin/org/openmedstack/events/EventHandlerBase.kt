@@ -7,7 +7,7 @@ import java.util.concurrent.CompletableFuture
 import kotlin.reflect.KClass
 
 abstract class EventHandlerBase<T> : IHandleEvents where T: BaseEvent {
-    final override fun <T> canHandle(type: Class<T>): Boolean where T: BaseEvent{
+    final override fun canHandle(type: Class<*>): Boolean {
         return Class.forName(javaClass.typeParameters[0].name).isAssignableFrom(type)
     }
 

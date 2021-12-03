@@ -3,28 +3,32 @@ package org.openmedstack
 import junit.framework.TestCase
 import org.junit.Assert
 import org.junit.Test
-import org.openmedstack.commands.CommandResponse
-import org.openmedstack.commands.DomainCommand
-import org.openmedstack.commands.IHandleCommands
+import org.openmedstack.events.BaseEvent
+import org.openmedstack.events.IHandleEvents
+import org.openmedstack.readmodels.IUpdateReadModel
 import java.util.concurrent.CompletableFuture
 
-class ReflectionToolTest : TestCase() {
+class ReflectionToolTest  {
     @Test
     fun testGetTypeParameter() {
-        val handler = TestHandler()
-        var type = ReflectionTool.Companion.getTypeParameter(handler, IHandleCommands::class.java)
+        val updater = TestUpdater()
+        var type = ReflectionTool.Companion.getTypeParameter(updater::class.java, IUpdateReadModel::class.java)
 
-        Assert.assertTrue(handler is IHandleCommands)
-        Assert.assertEquals(DomainCommand::class.java, type)
+        Assert.assertEquals(BaseEvent::class.java, type)
+    }
+
+    @Test
+    fun canLoadTypes() {
+        val classes = ReflectionTool.Companion.findAllClasses(IHandleEvents::class.java.`package`).toList()
+        Assert.assertEquals(6, classes.size)
     }
 }
 
-class TestHandler : IHandleCommands {
-    override fun <T> canHandle(type: Class<T>): Boolean where T: DomainCommand {
+class TestUpdater: IUpdateReadModel {
+    override fun canUpdate(eventType: Class<*>): Boolean {
         return true
     }
-
-    override fun handle(command: DomainCommand, messageHeaders: MessageHeaders): CompletableFuture<CommandResponse> {
-        return CompletableFuture.completedFuture(CommandResponse.success(command))
+    override fun update(domainEvent: BaseEvent, headers: MessageHeaders?): CompletableFuture<*> {
+        return CompletableFuture.completedFuture(true)
     }
 }

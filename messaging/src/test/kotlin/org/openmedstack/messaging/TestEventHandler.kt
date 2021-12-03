@@ -1,4 +1,4 @@
-package org.openmedstack.sample
+package org.openmedstack.messaging
 
 import org.openmedstack.MessageHeaders
 import org.openmedstack.events.BaseEvent
