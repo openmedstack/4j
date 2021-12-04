@@ -7,7 +7,7 @@ import org.openmedstack.commands.IHandleCommands
 import java.util.concurrent.CompletableFuture
 
 class TestCommandHandler : IHandleCommands {
-    override fun <T> canHandle(type: Class<T>): Boolean where T: DomainCommand {
+    override fun canHandle(type: Class<*>): Boolean {
         return TestCommand::class.java.isAssignableFrom(type)
     }
 

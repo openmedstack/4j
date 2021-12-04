@@ -6,7 +6,7 @@ import java.util.regex.Pattern
 
 class DeploymentConfiguration {
     var name: String? = null
-    var environment: String? = null
+    var tenantId: String? = null
     var services = HashMap<Pattern, URI>()
     var serviceBus: URI? = null
     var serviceBusUsername: String? = null

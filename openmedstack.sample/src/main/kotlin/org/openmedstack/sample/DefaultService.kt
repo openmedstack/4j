@@ -12,23 +12,24 @@ import org.openmedstack.events.IPublishEvents
 import java.util.concurrent.CompletableFuture
 
 class DefaultService(vararg modules: Module?) : Service {
-    private val injector: Injector
+    private val _injector: Injector
+
     override fun start(): CompletableFuture<*> {
         return CompletableFuture.completedFuture(true)
     }
 
-    override fun <T : DomainCommand> send(command: T): CompletableFuture<CommandResponse> {
-        val sender = injector.getInstance(IRouteCommands::class.java)
+    override fun <T> send(command: T): CompletableFuture<CommandResponse> where T : DomainCommand {
+        val sender = _injector.getInstance(IRouteCommands::class.java)
         return sender.send(command, HashMap())
     }
 
-    override fun <T : BaseEvent> publish(msg: T): CompletableFuture<*> {
-        val sender = injector.getInstance(IPublishEvents::class.java)
+    override fun <T> publish(msg: T): CompletableFuture<*> where T : BaseEvent {
+        val sender = _injector.getInstance(IPublishEvents::class.java)
         return sender.publish(msg, HashMap())
     }
 
-    override fun <T : Any> resolve(type: Class<T>): T {
-        return injector.getInstance(type)
+    override fun <T> resolve(type: Class<T>): T where T : Any {
+        return _injector.getInstance(type)
     }
 
     @Throws(Exception::class)
@@ -36,6 +37,6 @@ class DefaultService(vararg modules: Module?) : Service {
     }
 
     init {
-        injector = Guice.createInjector(*modules)
+        _injector = Guice.createInjector(*modules)
     }
 }

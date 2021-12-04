@@ -7,7 +7,6 @@ import java.lang.reflect.ParameterizedType
 import java.lang.reflect.Type
 import java.util.*
 import java.util.stream.Stream
-import kotlin.collections.ArrayList
 
 class ReflectionTool {
     companion object {

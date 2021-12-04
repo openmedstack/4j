@@ -5,6 +5,8 @@ import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IHandleEvents
 import org.openmedstack.events.IPublishEvents
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class InMemoryPublisher constructor(private val _eventHandlers: Set<IHandleEvents>) : IPublishEvents {
     override fun <T : BaseEvent> publish(

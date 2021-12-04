@@ -6,7 +6,7 @@ import org.openmedstack.commands.IHandleCommands
 import java.util.concurrent.CompletableFuture
 
 class TestHandler : IHandleCommands {
-    override fun <T> canHandle(type: Class<T>): Boolean where T: DomainCommand {
+    override fun canHandle(type: Class<*>): Boolean {
         return true
     }
 

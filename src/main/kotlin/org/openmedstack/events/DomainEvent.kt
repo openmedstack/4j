@@ -19,4 +19,4 @@ import java.lang.NullPointerException
 import org.openmedstack.ILookupServices
 import org.openmedstack.IValidateTokens
 
-abstract class DomainEvent protected constructor(source: String, val version: Int, timeStamp: Instant, correlationId: String?) : BaseEvent(source, timeStamp, correlationId)
+abstract class DomainEvent protected constructor(source: String, val version: Int, timeStamp: Instant, correlationId: String? = null) : BaseEvent(source, timeStamp, correlationId)

@@ -14,15 +14,18 @@ class DomainModule constructor(vararg packages: Package): AbstractModule() {
     override fun configure() {
         super.configure()
         val handlerBinder = Multibinder.newSetBinder(binder(), IHandleEvents::class.java)
-        for (c in ReflectionTool.findAllClasses(*_packages).filter{c-> IHandleEvents::class.java.isAssignableFrom(c)}) {
+        for (c in ReflectionTool.findAllClasses(*_packages)
+            .filter { c -> IHandleEvents::class.java.isAssignableFrom(c) }) {
             handlerBinder.addBinding().toConstructor(c.declaredConstructors[0] as Constructor<IHandleEvents>)
         }
         val commandBinder = Multibinder.newSetBinder(binder(), IHandleCommands::class.java)
-        for (c in ReflectionTool.findAllClasses(*_packages).filter{c-> IHandleCommands::class.java.isAssignableFrom(c)}) {
+        for (c in ReflectionTool.findAllClasses(*_packages)
+            .filter { c -> IHandleCommands::class.java.isAssignableFrom(c) }) {
             commandBinder.addBinding().toConstructor(c.declaredConstructors[0] as Constructor<IHandleCommands>)
         }
         val readModelBinder = Multibinder.newSetBinder(binder(), IUpdateReadModel::class.java)
-        for (c in ReflectionTool.findAllClasses(*_packages).filter{c-> IUpdateReadModel::class.java.isAssignableFrom(c)}) {
+        for (c in ReflectionTool.findAllClasses(*_packages)
+            .filter { c -> IUpdateReadModel::class.java.isAssignableFrom(c) }) {
             readModelBinder.addBinding().toConstructor(c.declaredConstructors[0] as Constructor<IUpdateReadModel>)
         }
     }
