@@ -1,12 +1,12 @@
 package org.openmedstack
 
-import junit.framework.TestCase
 import org.junit.Assert
 import org.junit.Test
 import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IHandleEvents
 import org.openmedstack.readmodels.IUpdateReadModel
 import java.util.concurrent.CompletableFuture
+import kotlin.streams.toList
 
 class ReflectionToolTest  {
     @Test

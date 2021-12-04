@@ -22,7 +22,7 @@ abstract class EventHandlerBase<T> : IHandleEvents where T: BaseEvent {
     }
 
     protected fun verifyUserToken(token: String?): CompletableFuture<Boolean> {
-        return CompletableFuture<Boolean>().completeAsync { java.lang.Boolean.TRUE }
+        return CompletableFuture<Boolean>().thenApplyAsync { java.lang.Boolean.TRUE }
     }
 
     protected abstract fun handleInternal(evt: T, headers: MessageHeaders?): CompletableFuture<*>?

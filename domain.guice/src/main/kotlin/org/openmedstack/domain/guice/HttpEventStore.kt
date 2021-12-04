@@ -5,14 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.inject.Inject
 import org.openmedstack.domain.Memento
 import org.openmedstack.eventstore.*
-import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
+import java.net.*
+import java.net.http.*
 import java.util.concurrent.CompletableFuture
 
 class HttpEventStore @Inject constructor(mapper: ObjectMapper) : IStoreEvents, ICommitEvents {
-    private val _persistence: HttpClient = HttpClient.newHttpClient()
+    private val _persistence: HttpClient
     private val _mapper: ObjectMapper
     override fun createStream(bucketId: String?, streamId: String): CompletableFuture<IEventStream> {
         return CompletableFuture.completedFuture(OptimisticEventStream.create(bucketId, streamId, this))
@@ -20,7 +18,7 @@ class HttpEventStore @Inject constructor(mapper: ObjectMapper) : IStoreEvents, I
 
     override fun openStream(bucketId: String?, streamId: String, minRevision: Int, maxRevision: Int): CompletableFuture<IEventStream> {
         val mr = if (maxRevision <= 0) Int.MAX_VALUE else maxRevision
-        return OptimisticEventStream.Companion.create(bucketId, streamId, this, minRevision.coerceAtLeast(0), mr)
+        return OptimisticEventStream.create(bucketId, streamId, this, minRevision.coerceAtLeast(0), mr)
     }
 
     override fun <TMemento : Memento> openStream(snapshot: Snapshot<TMemento>, maxRevision: Int): CompletableFuture<IEventStream> {
@@ -59,5 +57,6 @@ class HttpEventStore @Inject constructor(mapper: ObjectMapper) : IStoreEvents, I
 
     init {
         _mapper = mapper
+        _persistence = HttpClient.newHttpClient()
     }
 }

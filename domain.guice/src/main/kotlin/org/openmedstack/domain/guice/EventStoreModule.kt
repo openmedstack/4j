@@ -10,14 +10,16 @@ import org.openmedstack.commands.DomainCommand
 import org.openmedstack.commands.IHandleCommands
 import org.openmedstack.eventstore.*
 import java.lang.reflect.Constructor
+import java.net.http.HttpClient
 import java.util.concurrent.CompletableFuture
 
 class EventStoreModule : AbstractModule() {
     override fun configure() {
+        bind(HttpClient::class.java).toInstance(HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build())
         bind(IConstructAggregates::class.java).to(ContainerAggregateFactory::class.java)
         bind(IConstructSagas::class.java).to(ContainerSagaFactory::class.java)
         bind(IStoreEvents::class.java).to(HttpEventStore::class.java)
-        bind(IAccessSnapshots::class.java).to(HttpSnapshotStore::class.java)
+        bind(IAccessSnapshots::class.java).toConstructor(HttpSnapshotStore::class.java.declaredConstructors[0] as Constructor<HttpSnapshotStore>)
         bind(Repository::class.java).toConstructor(
             DelegateAggregateRepository::class.java.getConstructor(
                 IProvideTenant::class.java,

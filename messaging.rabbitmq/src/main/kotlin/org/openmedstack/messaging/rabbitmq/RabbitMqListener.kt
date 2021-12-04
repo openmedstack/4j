@@ -8,17 +8,14 @@ import io.cloudevents.core.data.PojoCloudEventData
 import io.cloudevents.jackson.PojoCloudEventDataMapper
 import org.openmedstack.DeploymentConfiguration
 import org.openmedstack.IProvideTopic
-import org.openmedstack.events.IHandleEvents
-import java.io.BufferedReader
-import java.io.InputStreamReader
-import java.util.*
-import java.util.stream.Collectors
-
 import org.openmedstack.MessageHeadersImpl
 import org.openmedstack.ReflectionTool
 import org.openmedstack.events.BaseEvent
+import org.openmedstack.events.IHandleEvents
+import java.util.*
 import java.util.concurrent.CompletableFuture
-import kotlin.collections.HashMap
+import java.util.stream.Collectors
+import kotlin.streams.toList
 
 class RabbitMqListener constructor(
     connection: Connection,
