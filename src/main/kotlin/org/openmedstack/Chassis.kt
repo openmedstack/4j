@@ -4,7 +4,6 @@ import org.openmedstack.commands.CommandResponse
 import org.openmedstack.commands.DomainCommand
 import org.openmedstack.events.BaseEvent
 import java.util.concurrent.CompletableFuture
-import java.util.function.Function
 
 class Chassis private constructor(val configuration: DeploymentConfiguration) : AutoCloseable {
     private val _metadata: HashMap<String, Any> = HashMap()

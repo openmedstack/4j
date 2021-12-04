@@ -15,17 +15,17 @@ class DomainModule constructor(vararg packages: Package): AbstractModule() {
         super.configure()
         val handlerBinder = Multibinder.newSetBinder(binder(), IHandleEvents::class.java)
         for (c in ReflectionTool.findAllClasses(*_packages)
-            .filter { c -> IHandleEvents::class.java.isAssignableFrom(c) }) {
+            .filter { c -> ReflectionTool.isBindableAs(IHandleEvents::class.java, c) }) {
             handlerBinder.addBinding().toConstructor(c.declaredConstructors[0] as Constructor<IHandleEvents>)
         }
         val commandBinder = Multibinder.newSetBinder(binder(), IHandleCommands::class.java)
         for (c in ReflectionTool.findAllClasses(*_packages)
-            .filter { c -> IHandleCommands::class.java.isAssignableFrom(c) }) {
+            .filter { c -> ReflectionTool.isBindableAs(IHandleCommands::class.java, c) }) {
             commandBinder.addBinding().toConstructor(c.declaredConstructors[0] as Constructor<IHandleCommands>)
         }
         val readModelBinder = Multibinder.newSetBinder(binder(), IUpdateReadModel::class.java)
         for (c in ReflectionTool.findAllClasses(*_packages)
-            .filter { c -> IUpdateReadModel::class.java.isAssignableFrom(c) }) {
+            .filter { c -> ReflectionTool.isBindableAs(IUpdateReadModel::class.java, c) }) {
             readModelBinder.addBinding().toConstructor(c.declaredConstructors[0] as Constructor<IUpdateReadModel>)
         }
     }
