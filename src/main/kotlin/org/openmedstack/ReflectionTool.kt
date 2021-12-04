@@ -14,10 +14,7 @@ import java.util.jar.JarEntry
 import java.util.jar.JarFile
 import java.util.stream.Stream
 import kotlin.collections.ArrayList
-import kotlin.io.path.Path
-import kotlin.io.path.exists
-import kotlin.io.path.isDirectory
-import kotlin.io.path.isReadable
+import kotlin.io.path.*
 
 class ReflectionTool {
     companion object {
@@ -73,14 +70,14 @@ class ReflectionTool {
             val list = ArrayList<Class<*>>()
             while (e.hasMoreElements()) {
                 val je: JarEntry = e.nextElement()
-                if (je.isDirectory || !je.name.endsWith(".class")) {
+
+                if (je.isDirectory || !Path(je.name).extension.equals("class", true)) {
                     continue
                 }
                 // -6 because of .class
                 val className: String = je.name.substring(0, je.name.length - 6).replace('/', '.')
                 val c = ucl.loadClass(className)
                 if(c.packageName == packageName){
-                    println(c.name)
                     list.add(c)
                 }
             }
