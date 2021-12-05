@@ -44,9 +44,7 @@ class ReflectionTool {
 
         fun findAllClasses(): Stream<Class<*>> {
             val loader = ClassLoader.getSystemClassLoader().definedPackages
-            return Arrays.stream(loader)
-                .map { p -> p.name }
-                .flatMap { n -> findAllClassesUsingClassLoader(n) }
+            return findAllClasses(*loader)
         }
 
         private fun findAllClassesInJar(packageName: String): Stream<Class<*>> {
@@ -54,10 +52,10 @@ class ReflectionTool {
             val url = cl.getResource(packageName.replace('.', '/'))
             val path =
                 url.file.substring(0, if (url.file.indexOf('!') == -1) url.file.length else url.file.indexOf('!'))
-                    .replace("file:/", "").trimStart('/')
-            val p = Path(path)
+                    .replace("file:", "")
+            val isWindows = System.getProperty("os.name").indexOf("win", ignoreCase = true) > -1
+            val p = Path(if(isWindows) path.trimStart('/') else path)
             if (p.isDirectory() || !p.exists() || !p.isReadable()) {
-                println("Could not find jar at $path")
                 return Stream.empty()
             }
 
@@ -91,7 +89,6 @@ class ReflectionTool {
                 println("$packageName not found")
             }
             if(stream.available() == 0){
-                println("Empty stream found for $packageName")
                 return Stream.empty()
             }
             val reader = BufferedReader(InputStreamReader(stream))

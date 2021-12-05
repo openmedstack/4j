@@ -4,7 +4,7 @@ import org.openmedstack.MessageHeaders
 import org.openmedstack.events.BaseEvent
 import java.util.concurrent.CompletableFuture
 
-interface IUpdateReadModel {
+interface IUpdateReadModel<T> where T: BaseEvent {
     fun canUpdate(eventType: Class<*>): Boolean
-    fun update(domainEvent: BaseEvent, headers: MessageHeaders?): CompletableFuture<*>
+    fun <T> update(domainEvent: T, headers: MessageHeaders?): CompletableFuture<*>
 }

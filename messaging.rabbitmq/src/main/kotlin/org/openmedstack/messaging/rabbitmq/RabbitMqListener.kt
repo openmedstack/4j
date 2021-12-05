@@ -15,7 +15,6 @@ import org.openmedstack.events.IHandleEvents
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Collectors
-import kotlin.streams.toList
 
 class RabbitMqListener constructor(
     connection: Connection,

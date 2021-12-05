@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+Main-Class: 
+Class-Path: error_prone_annotations-2.3.4.jar guava-30.1-jre.jar kotlin-
+ stdlib-jdk7-1.6.0.jar listenablefuture-9999.0-empty-to-avoid-conflict-w
+ ith-guava.jar annotations-13.0.jar checker-qual-3.5.0.jar j2objc-annota
+ tions-1.3.jar kotlin-stdlib-1.6.0.jar kotlin-stdlib-jdk8-1.6.0.jar kotl
+ in-stdlib-common-1.6.0.jar jsr305-3.0.2.jar failureaccess-1.0.1.jar
+

@@ -5,8 +5,6 @@ import org.junit.Test
 import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IHandleEvents
 import org.openmedstack.readmodels.IUpdateReadModel
-import java.util.concurrent.CompletableFuture
-import kotlin.streams.toList
 
 class ReflectionToolTest  {
     @Test
@@ -24,11 +22,3 @@ class ReflectionToolTest  {
     }
 }
 
-class TestUpdater: IUpdateReadModel {
-    override fun canUpdate(eventType: Class<*>): Boolean {
-        return true
-    }
-    override fun update(domainEvent: BaseEvent, headers: MessageHeaders?): CompletableFuture<*> {
-        return CompletableFuture.completedFuture(true)
-    }
-}

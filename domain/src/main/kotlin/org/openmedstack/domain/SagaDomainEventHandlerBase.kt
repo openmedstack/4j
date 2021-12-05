@@ -1,15 +1,11 @@
 package org.openmedstack.domain
 
 import org.openmedstack.MessageHeaders
-import org.openmedstack.ReflectionTool
 import org.openmedstack.Tuple
 import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IHandleEvents
 import org.openmedstack.eventstore.SagaRepository
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionStage
-import java.util.function.Consumer
-import java.util.function.Function
 
 abstract class SagaDomainEventHandlerBase<TSaga : Saga, TBaseEvent : BaseEvent> protected constructor(private val _repository: SagaRepository) : IHandleEvents {
     override fun handle(domainEvent: BaseEvent, headers: MessageHeaders): CompletableFuture<*> {

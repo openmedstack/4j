@@ -40,13 +40,13 @@ class ChassisTest {
 
     @Test
     fun start() {
-        chassis!!.withServiceBuilder{ c: DeploymentConfiguration, p : Set<Package> -> getService(c, p) }
+        chassis!!.withServiceBuilder{ _: DeploymentConfiguration, p : Set<Package> -> getService(p) }
         chassis!!.start()
     }
 
     @Test
     fun send() {
-        chassis!!.withServiceBuilder { c: DeploymentConfiguration, p : Set<Package> -> getService(c, p) }
+        chassis!!.withServiceBuilder { _: DeploymentConfiguration, p : Set<Package> -> getService(p) }
         chassis!!.start()
         val s = chassis!!.send(TestCommand("test"))
         Assert.assertTrue(s is CompletableFuture<*>)
@@ -58,7 +58,7 @@ class ChassisTest {
 
     @Test
     fun resolve() {
-        chassis!!.withServiceBuilder { c,p -> getService(c,p) }
+        chassis!!.withServiceBuilder { _,p -> getService(p) }
         chassis!!.start()
         val s = chassis!!.resolve(String::class.java)
         Assert.assertTrue(s is String)
@@ -73,7 +73,7 @@ class ChassisTest {
         }
     }
 
-    private fun getService(c: DeploymentConfiguration, p: Set<Package>): Service {
+    private fun getService(p: Set<Package>): Service {
         return object : Service {
             var injector = Guice.createInjector(
                 DomainModule(*p.toTypedArray()),

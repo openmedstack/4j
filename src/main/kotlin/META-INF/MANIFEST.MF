@@ -1,8 +1,0 @@
-Manifest-Version: 1.0
-Class-Path: j2objc-annotations-1.3.jar javatuples-1.2.jar annotations-23
- .0.0.jar failureaccess-1.0.1.jar kotlin-stdlib-common-1.6.0.jar checker
- -qual-3.5.0.jar jsr305-3.0.2.jar guava-30.1-jre.jar error_prone_annotat
- ions-2.3.4.jar kotlin-stdlib-jdk7-1.6.0.jar listenablefuture-9999.0-emp
- ty-to-avoid-conflict-with-guava.jar kotlin-stdlib-1.6.0.jar kotlin-stdl
- ib-jdk8-1.6.0.jar
-

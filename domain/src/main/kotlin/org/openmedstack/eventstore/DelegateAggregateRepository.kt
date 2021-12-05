@@ -4,11 +4,9 @@ import org.openmedstack.IProvideTenant
 import org.openmedstack.domain.Aggregate
 import org.openmedstack.domain.HandlerForDomainEventNotFoundException
 import org.openmedstack.domain.Memento
-import java.lang.reflect.ParameterizedType
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-import kotlin.reflect.KClass
 
 class DelegateAggregateRepository(
         private val _tenantId: IProvideTenant,

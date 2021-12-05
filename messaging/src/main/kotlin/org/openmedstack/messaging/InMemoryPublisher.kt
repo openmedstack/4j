@@ -5,14 +5,12 @@ import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IHandleEvents
 import org.openmedstack.events.IPublishEvents
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 class InMemoryPublisher constructor(private val _eventHandlers: Set<IHandleEvents>) : IPublishEvents {
-    override fun <T : BaseEvent> publish(
+    override fun <T> publish(
         evt: T,
         headers: HashMap<String, Any>
-    ): CompletableFuture<*> {
+    ): CompletableFuture<*> where T: BaseEvent {
         val results = _eventHandlers.filter { h -> h.canHandle(evt::class.java) }.map { h: IHandleEvents ->
             h.handle(
                 evt,

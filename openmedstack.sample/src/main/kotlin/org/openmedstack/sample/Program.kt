@@ -1,6 +1,5 @@
 package org.openmedstack.sample
 
-import com.google.inject.Inject
 import org.openmedstack.Chassis
 import org.openmedstack.DeploymentConfiguration
 import org.openmedstack.MessageHeaders
