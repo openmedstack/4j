@@ -1,10 +1,7 @@
 package org.openmedstack.events
 
 import org.openmedstack.MessageHeaders
-import java.lang.reflect.ParameterizedType
-import java.lang.reflect.Type
 import java.util.concurrent.CompletableFuture
-import kotlin.reflect.KClass
 
 abstract class EventHandlerBase<T> : IHandleEvents where T: BaseEvent {
     final override fun canHandle(type: Class<*>): Boolean {

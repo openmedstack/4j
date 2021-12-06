@@ -8,14 +8,14 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>domain</module>
-        <module>domain.guice</module>
-        <module>messaging.rabbitmq.guice</module>
-        <module>messaging</module>
-        <module>messaging.rabbitmq</module>
-        <module>messaging.guice</module>
-        <module>openmedstack</module>
-        <module>openmedstack.sample</module>
+        <module>modules/domain</module>
+        <module>modules/domain.guice</module>
+        <module>modules/messaging.rabbitmq.guice</module>
+        <module>modules/messaging</module>
+        <module>modules/messaging.rabbitmq</module>
+        <module>modules/messaging.guice</module>
+        <module>modules/openmedstack</module>
+        <module>modules/openmedstack.sample</module>
     </modules>
     <dependencies>
         <dependency>
