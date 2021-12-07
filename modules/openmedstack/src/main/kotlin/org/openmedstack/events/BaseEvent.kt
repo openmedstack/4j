@@ -1,15 +1,19 @@
 package org.openmedstack.events
 
-import java.time.Instant
 import org.openmedstack.ICorrelate
+import java.time.OffsetDateTime
 
-abstract class BaseEvent protected constructor(source: String, timeStamp: Instant, correlationId: String? = null) : ICorrelate {
+abstract class BaseEvent protected constructor(
+    source: String,
+    timeStamp: OffsetDateTime,
+    correlationId: String? = null
+) : ICorrelate {
     val source: String
-    val timestamp: Instant
+    val timestamp: OffsetDateTime
     override val correlationId: String?
 
     init {
-        require(!(timeStamp === Instant.MIN))
+        require(!(timeStamp === OffsetDateTime.MIN))
         this.source = source
         timestamp = timeStamp
         this.correlationId = correlationId

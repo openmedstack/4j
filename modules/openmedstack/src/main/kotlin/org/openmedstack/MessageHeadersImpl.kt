@@ -4,7 +4,7 @@ class MessageHeadersImpl(items: Map<String, Any>) : MessageHeaders {
     private val _headers: MutableMap<String, Any>
 
     override val userToken: String?
-        get() = _headers["token"] as String?
+        get() = if (_headers.containsKey("token")) _headers["token"] as String? else ""
 
     override val size: Int
         get() = _headers.size
@@ -26,12 +26,12 @@ class MessageHeadersImpl(items: Map<String, Any>) : MessageHeaders {
     }
 
     override val keys: MutableSet<String>
-        get()= _headers.keys
+        get() = _headers.keys
 
     override val values: MutableCollection<Any>
         get() = _headers.values
 
-    override val entries : MutableSet<MutableMap.MutableEntry<String, Any>>
+    override val entries: MutableSet<MutableMap.MutableEntry<String, Any>>
         get() = _headers.entries
 
     init {

@@ -3,7 +3,7 @@ package org.openmedstack.domain
 import org.junit.Assert
 import org.junit.Test
 import org.openmedstack.events.BaseEvent
-import java.time.Instant
+import java.time.OffsetDateTime
 
 class ConventionEventRouterTest {
     @Test
@@ -11,7 +11,7 @@ class ConventionEventRouterTest {
         val handler = TestHandler()
         val router = ConventionEventRouter(true, handler)
         try {
-            router.dispatch(TestMessage("test", Instant.now()))
+            router.dispatch(TestMessage("test", OffsetDateTime.now()))
         } catch (e: HandlerForDomainEventNotFoundException) {
             Assert.fail()
         }
@@ -24,4 +24,4 @@ internal class TestHandler {
     }
 }
 
-internal class TestMessage(source: String, timeStamp: Instant) : BaseEvent(source, timeStamp)
+internal class TestMessage(source: String, timeStamp: OffsetDateTime) : BaseEvent(source, timeStamp)

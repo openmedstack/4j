@@ -12,9 +12,11 @@ import org.openmedstack.ILookupServices
 import org.openmedstack.IProvideTopic
 import org.openmedstack.commands.IRouteCommands
 import org.openmedstack.events.IPublishEvents
+import org.openmedstack.messaging.rabbitmq.RabbitMqListener
 import org.openmedstack.messaging.rabbitmq.RabbitMqPublisher
 import org.openmedstack.messaging.rabbitmq.RabbitMqRouter
 import java.io.IOException
+import java.lang.reflect.Constructor
 import java.net.URISyntaxException
 import java.security.KeyManagementException
 import java.security.NoSuchAlgorithmException
@@ -22,7 +24,16 @@ import java.util.concurrent.TimeoutException
 
 class RabbitMqModule(private val _configuration: DeploymentConfiguration) : AbstractModule() {
     override fun configure() {
-        bind(IPublishEvents::class.java).toConstructor(RabbitMqPublisher::class.java.getConstructor(Connection::class.java, IProvideTopic::class.java, ObjectMapper::class.java))
+        bind(ConnectionFactory::class.java).toProvider(Provider { connectionFactory }).asEagerSingleton()
+        bind(Connection::class.java).toProvider(ConnectionProvider::class.java)
+        bind(Channel::class.java).toProvider(ChannelProvider::class.java)
+        bind(IPublishEvents::class.java).toConstructor(
+            RabbitMqPublisher::class.java.getConstructor(
+                Connection::class.java,
+                IProvideTopic::class.java,
+                ObjectMapper::class.java
+            )
+        )
         bind(IRouteCommands::class.java).toConstructor(
             RabbitMqRouter::class.java.getConstructor(
                 Connection::class.java,
@@ -31,9 +42,7 @@ class RabbitMqModule(private val _configuration: DeploymentConfiguration) : Abst
                 ObjectMapper::class.java
             )
         )
-        bind(ConnectionFactory::class.java).toProvider(Provider { connectionFactory }).asEagerSingleton()
-        bind(Connection::class.java).toProvider(ConnectionProvider::class.java)
-        bind(Channel::class.java).toProvider(ChannelProvider::class.java)
+        bind(RabbitMqListener::class.java).toConstructor(RabbitMqListener::class.java.constructors[0] as Constructor<RabbitMqListener>)
     }
 
     @get:Throws(NoSuchAlgorithmException::class, KeyManagementException::class, URISyntaxException::class)
@@ -45,7 +54,8 @@ class RabbitMqModule(private val _configuration: DeploymentConfiguration) : Abst
         }
 }
 
-internal class ConnectionProvider @Inject constructor(private val _connectionFactory: ConnectionFactory) : Provider<Connection> {
+internal class ConnectionProvider @Inject constructor(private val _connectionFactory: ConnectionFactory) :
+    Provider<Connection> {
     override fun get(): Connection {
         return try {
             _connectionFactory.newConnection()
@@ -57,7 +67,8 @@ internal class ConnectionProvider @Inject constructor(private val _connectionFac
     }
 }
 
-internal class ChannelProvider @Inject constructor(private val _connectionFactory: ConnectionFactory) : Provider<Channel> {
+internal class ChannelProvider @Inject constructor(private val _connectionFactory: ConnectionFactory) :
+    Provider<Channel> {
     override fun get(): Channel {
         return try {
             _connectionFactory.newConnection().createChannel()

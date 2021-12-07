@@ -1,10 +1,11 @@
 package org.openmedstack.messaging.rabbitmq
 
-internal class ManualResetEvent(open: Boolean) {
+class ManualResetEvent(open: Boolean = false) {
     private val monitor = Object()
 
     @Volatile
     private var open = false
+
     @Throws(InterruptedException::class)
     fun waitOne() {
         synchronized(monitor) {

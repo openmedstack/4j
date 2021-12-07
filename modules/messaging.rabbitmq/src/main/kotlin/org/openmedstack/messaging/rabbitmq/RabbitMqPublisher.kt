@@ -12,14 +12,16 @@ import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IPublishEvents
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import java.time.Clock
+import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class RabbitMqPublisher constructor(
     private val _connection: Connection,
     private val _topicProvider: IProvideTopic,
-    private val _mapper: ObjectMapper)
-    : IPublishEvents, AutoCloseable {
+    private val _mapper: ObjectMapper
+) : IPublishEvents, AutoCloseable {
     private val _channel: Channel = _connection.createChannel()
     override fun <T : BaseEvent> publish(evt: T, headers: HashMap<String, Any>): CompletableFuture<*> {
         return CompletableFuture.supplyAsync {
@@ -30,14 +32,17 @@ class RabbitMqPublisher constructor(
                 AMQP.BasicProperties.Builder().build(),
                 getMessageBytes(UUID.randomUUID().toString(), evt)
             )
+            topic
         }
     }
 
     private fun <T> getMessageBytes(id: String, evt: T): ByteArray where T : BaseEvent {
-        val topic = _topicProvider.get(evt::class.java)
+        val topic = _topicProvider.getCanonical(evt::class.java)
         val event = CloudEventBuilder.v1()
             .withId(id)
+            .withTime(OffsetDateTime.now(Clock.systemUTC()))
             .withType(JsonFormat.CONTENT_TYPE)
+            .withSubject(topic)
             .withSource(URI.create("http://localhost"))
             .withData("application/json+${topic}") {
                 _mapper.writeValueAsString(evt).toByteArray(StandardCharsets.UTF_8)

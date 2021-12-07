@@ -10,7 +10,7 @@ import org.openmedstack.events.IHandleEvents
 import org.openmedstack.messaging.guice.DomainModule
 import org.openmedstack.messaging.guice.InMemoryMessagingModule
 import java.net.URI
-import java.time.Instant
+import java.time.OffsetDateTime
 import java.util.concurrent.CompletableFuture
 
 fun main(args: Array<String>) {
@@ -22,7 +22,13 @@ fun main(args: Array<String>) {
     configuration.tenantId = "t1"
     val chassis = Chassis.from(configuration)
         .definedIn(SampleEventHandler::class.java.`package`)
-        .withServiceBuilder { _, p -> DefaultService(EventStoreModule(), InMemoryMessagingModule(), DomainModule(*p.toTypedArray())) }
+        .withServiceBuilder { _, p ->
+            DefaultService(
+                EventStoreModule(),
+                InMemoryMessagingModule(),
+                DomainModule(*p.toTypedArray())
+            )
+        }
     chassis.start()
     println("Started")
     chassis.publish(SampleEvent("sample", 0))
@@ -31,7 +37,7 @@ fun main(args: Array<String>) {
     println("Finished")
 }
 
-class SampleEvent(source: String, version: Int) : DomainEvent(source, version, Instant.now())
+class SampleEvent(source: String, version: Int) : DomainEvent(source, version, OffsetDateTime.now())
 
 class SampleEventHandler : IHandleEvents {
     override fun canHandle(type: Class<*>): Boolean {
