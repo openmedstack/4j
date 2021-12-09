@@ -1,5 +1,6 @@
 package org.openmedstack.messaging.rabbitmq
 
+import org.openmedstack.ManualResetEvent
 import org.openmedstack.MessageHeaders
 import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IHandleEvents

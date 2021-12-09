@@ -5,7 +5,8 @@ import junit.framework.TestCase
 import org.junit.Assert
 import org.junit.Test
 import org.openmedstack.commands.IRouteCommands
-import java.time.Instant
+import java.time.Clock
+import java.time.OffsetDateTime
 
 class InMemoryMessagingModuleTest : TestCase() {
 
@@ -17,7 +18,7 @@ class InMemoryMessagingModuleTest : TestCase() {
     fun testCanRouteCommandsToHandler() {
         val container = Guice.createInjector(InMemoryMessagingModule(), TestModule())
         val router = container.getInstance(IRouteCommands::class.java)
-        val response = router.send(TestCommand("test", 1, Instant.now()), HashMap()).get()
+        val response = router.send(TestCommand("test", 1, OffsetDateTime.now(Clock.systemUTC())), HashMap()).get()
 
         Assert.assertTrue(response.faultMessage.isNullOrBlank())
     }

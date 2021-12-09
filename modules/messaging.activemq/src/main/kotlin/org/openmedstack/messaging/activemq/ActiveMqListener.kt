@@ -1,10 +1,12 @@
-package org.openmedstack.messaging.rabbitmq
+package org.openmedstack.messaging.activemq
 
+import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.ObjectCodec
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
-import com.rabbitmq.client.*
+import org.apache.activemq.BlobMessage
+import org.apache.activemq.command.ActiveMQTextMessage
 import org.openmedstack.DeploymentConfiguration
 import org.openmedstack.IProvideTopic
 import org.openmedstack.MessageHeadersImpl
@@ -15,8 +17,9 @@ import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IHandleEvents
 import java.util.concurrent.CompletableFuture
 import java.util.stream.Collectors
+import javax.jms.*
 
-class RabbitMqListener constructor(
+class ActiveMqListener constructor(
     connection: Connection,
     configuration: DeploymentConfiguration,
     private val _topicProvider: IProvideTopic,
@@ -27,10 +30,10 @@ class RabbitMqListener constructor(
 ) : AutoCloseable {
     private val _mapper: ObjectMapper
     private val _configuration: DeploymentConfiguration
-    private val _channel: Channel
+    private val _channel: Session
 
     init {
-        _channel = connection.createChannel()
+        _channel = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
         _mapper = mapper
         _configuration = configuration
         val classes = ReflectionTool.findAllClasses(*packages).toList()
@@ -46,11 +49,11 @@ class RabbitMqListener constructor(
             .groupBy { c -> _topicProvider.get(c) }
 
         for (entry in graph) {
-            val queue = createQueue(entry)
+            val topic = createTopic(entry)
             val effective: List<IHandleEvents> =
                 handlers.stream().filter { h -> entry.value.stream().anyMatch { c -> h.canHandle(c) } }.toList()
-            val deliverCallback = PublishHandler(_mapper, entry.value.toSet(), effective.toSet())
-            _channel.basicConsume(queue.queue, true, deliverCallback) { _: String -> }
+            val consumer = _channel.createConsumer(topic)
+            consumer.messageListener = PublishHandler(_mapper, entry.value.toSet(), effective.toSet())
         }
     }
 
@@ -62,29 +65,26 @@ class RabbitMqListener constructor(
             .groupBy { c -> _topicProvider.get(c) }
 
         for (entry in graph) {
-            val queue = createQueue(entry)
+            val queue = createTopic(entry)
             val effective =
                 handlers.stream().filter { h -> entry.value.stream().anyMatch { c -> h.canHandle(c) } }.toList()
-            val deliverCallback = SendHandler(_mapper, entry.value.toSet(), effective.toSet(), _channel)
-            _channel.basicConsume(queue.queue, true, deliverCallback) { _: String -> }
+            val consumer = _channel.createConsumer(queue)
+            consumer.messageListener = SendHandler(_mapper, entry.value.toSet(), effective.toSet(), _channel)
         }
     }
 
-    private fun createQueue(entry: Map.Entry<String, List<Class<*>>>): AMQP.Queue.DeclareOk {
-        _channel.exchangeDeclare(entry.key, BuiltinExchangeType.TOPIC)
-        val queue = _channel.queueDeclare()
-        _channel.queueBind(queue.queue, entry.key, "#")
-        return queue
+    private fun createTopic(entry: Map.Entry<String, List<Class<*>>>): Topic {
+        return _channel.createTopic(entry.key)
     }
 
     private class PublishHandler constructor(
         private val _mapper: ObjectMapper,
         private val _types: Set<Class<*>>,
         private val _handlers: Set<IHandleEvents>
-    ) : MessageHandler(_mapper), DeliverCallback {
-        override fun handle(tag: String?, d: Delivery) {
+    ) : MessageHandler(_mapper), MessageListener {
+        override fun onMessage(msg: Message) {
             try {
-                val (codec, inputEvent, headers) = readDelivery(d)
+                val (codec, inputEvent, headers) = readDelivery(msg)
 
                 val list = ArrayList<CompletableFuture<*>>()
                 for (type in _types) {
@@ -110,11 +110,11 @@ class RabbitMqListener constructor(
         private val _mapper: ObjectMapper,
         private val _types: Set<Class<*>>,
         private val _handlers: Set<IHandleCommands>,
-        private val _channel: Channel
-    ) : MessageHandler(_mapper), DeliverCallback {
-        override fun handle(tag: String?, d: Delivery) {
+        private val _channel: Session
+    ) : MessageHandler(_mapper), MessageListener {
+        override fun onMessage(msg: Message) {
             try {
-                val (codec, inputEvent, headers) = readDelivery(d)
+                val (codec, inputEvent, headers) = readDelivery(msg)
 
                 for (type in _types) {
                     var handled = false
@@ -125,12 +125,11 @@ class RabbitMqListener constructor(
                                 val response =
                                     handler.handle(value as DomainCommand, MessageHeadersImpl(headers)).join()
                                 handled = true
-                                _channel.basicPublish(
-                                    d.properties.replyTo,
-                                    "",
-                                    null,
-                                    _mapper.writeValueAsBytes(response)
-                                )
+                                val producer = _channel.createProducer(msg.jmsReplyTo)
+                                val send = ActiveMQTextMessage()
+                                send.text = _mapper.writeValueAsString(response)
+                                producer.send(send)
+                                producer.close()
                                 break
                             }
                         } catch (e: Exception) {
@@ -147,31 +146,20 @@ class RabbitMqListener constructor(
     }
 
     private abstract class MessageHandler constructor(private val _mapper: ObjectMapper) {
-        fun generateHeaders(
-            prop: AMQP.BasicProperties,
-            node: ObjectNode
-        ): HashMap<String, Any> {
+        fun generateHeaders(msg: Message, node: ObjectNode): HashMap<String, Any> {
             val headers = HashMap<String, Any>()
-            if (!prop.correlationId.isNullOrBlank()) {
-                headers["correlation_id"] = prop.correlationId
+
+            if (!msg.jmsCorrelationID.isNullOrBlank()) {
+                headers["correlation_id"] = msg.jmsCorrelationID
             }
-            if (!prop.messageId.isNullOrBlank()) {
-                headers["message_id"] = prop.messageId
+            if (!msg.jmsMessageID.isNullOrBlank()) {
+                headers["message_id"] = msg.jmsMessageID
             }
-            if (!prop.clusterId.isNullOrBlank()) {
-                headers["cluster_id"] = prop.clusterId
+            if (msg.jmsExpiration >= 0) {
+                headers["expiration"] = msg.jmsExpiration
             }
-            if (!prop.appId.isNullOrBlank()) {
-                headers["app_id"] = prop.appId
-            }
-            if (!prop.contentEncoding.isNullOrBlank()) {
-                headers["content_encoding"] = prop.contentEncoding
-            }
-            if (!prop.expiration.isNullOrBlank()) {
-                headers["expiration"] = prop.expiration
-            }
-            if (prop.headers != null) {
-                prop.headers.forEach { e -> headers[e.key] = e.value }
+            for (name in msg.propertyNames.toList().map { n -> n.toString() }) {
+                headers[name] = msg.getObjectProperty(name)
             }
 
             headers["id"] = node.get("id").asText()
@@ -183,11 +171,36 @@ class RabbitMqListener constructor(
             return headers
         }
 
-        fun readDelivery(d: Delivery): Triple<ObjectCodec, JsonNode, HashMap<String, Any>> {
-            val p = _mapper.createParser(d.body)
+        fun readDelivery(msg: Message): Triple<ObjectCodec, JsonNode, HashMap<String, Any>> {
+            val p: JsonParser = when (msg::class.java) {
+                TextMessage::class.java -> {
+                    _mapper.createParser((msg as TextMessage).text)
+                }
+                BlobMessage::class.java -> {
+                    _mapper.createParser((msg as BlobMessage).url)
+                }
+                BytesMessage::class.java -> {
+                    val m = (msg as BytesMessage)
+                    val buffer = ByteArray(m.bodyLength.toInt())
+                    m.readBytes(buffer)
+                    _mapper.createParser(buffer)
+                }
+//                ObjectMessage::class.java -> {
+//                    _mapper.createParser((msg as ObjectMessage).`object`)
+//                }
+//                StreamMessage::class.java -> {
+//                    val buffer: ByteArray = byteArrayOf()
+//                    (msg as StreamMessage).readBytes()
+//                    _mapper.createParser()
+//                }
+                else -> {
+                    throw RuntimeException("${msg::class.java.name} is not supported")
+                }
+            }
+
             val node = p.readValueAsTree() as ObjectNode
             val inputEvent = node.remove("data")
-            val headers = generateHeaders(d.properties, node)
+            val headers = generateHeaders(msg, node)
             return Triple(p.codec, inputEvent, headers)
         }
     }

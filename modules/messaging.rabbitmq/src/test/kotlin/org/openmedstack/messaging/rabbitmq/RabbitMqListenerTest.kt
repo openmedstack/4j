@@ -9,43 +9,28 @@ import com.fasterxml.jackson.databind.*
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.rabbitmq.client.ConnectionFactory
 import org.junit.Test
-import org.openmedstack.ConfigurationTenantProvider
-import org.openmedstack.DeploymentConfiguration
-import org.openmedstack.EnvironmentTopicProvider
-import org.openmedstack.Topic
+import org.openmedstack.*
 import org.openmedstack.events.DomainEvent
 import java.io.IOException
+import java.net.URI
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
-
 
 class RabbitMqListenerTest {
     @Test
     fun canConnectToBroker() {
-        val configuration = DeploymentConfiguration()
-        configuration.serviceBusUsername = "guest"
-        configuration.serviceBusPassword = "guest"
-        configuration.tenantId = "test1"
-        val connectionFactory = ConnectionFactory()
-        connectionFactory.host = "localhost"
-        connectionFactory.username = configuration.serviceBusUsername
-        connectionFactory.password = configuration.serviceBusPassword
-        connectionFactory.virtualHost = "/"
-        connectionFactory.useNio()
-        connectionFactory.port = 5672
+        val configuration = createConfiguration()
+        val connectionFactory = buildConnectionFactory(configuration)
         val topicProvider = EnvironmentTopicProvider(ConfigurationTenantProvider(configuration))
         val connection = connectionFactory.newConnection()
-        val mapper = ObjectMapper()
-        val module = SimpleModule()
-        module.addDeserializer(OffsetDateTime::class.java, CustomDeserializer(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-        module.addSerializer(OffsetDateTime::class.java, CustomSerializer(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
-        mapper.registerModule(module)
+        val mapper = createMapper()
         val waitHandle = ManualResetEvent()
         val listener = RabbitMqListener(
             connection,
             configuration,
             topicProvider,
             setOf(TestEventHandler(waitHandle)),
+            setOf(),
             mapper,
             TestEvent::class.java.`package`
         )
@@ -55,7 +40,41 @@ class RabbitMqListenerTest {
             val publishTask = publisher.publish(TestEvent("test", 1), HashMap())
         }
         waitHandle.waitOne()
+
+        publisher.close()
+        listener.close()
         connection.close()
+    }
+
+    private fun createMapper(): ObjectMapper {
+        val mapper = ObjectMapper()
+        val module = SimpleModule()
+        module.addDeserializer(OffsetDateTime::class.java, CustomDeserializer(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+        module.addSerializer(OffsetDateTime::class.java, CustomSerializer(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
+        mapper.registerModule(module)
+        return mapper
+    }
+
+    private fun createConfiguration(): DeploymentConfiguration {
+        val configuration = DeploymentConfiguration()
+        configuration.serviceBus = URI.create("rabbitmq://localhost/")
+        configuration.serviceBusUsername = "guest"
+        configuration.serviceBusPassword = "guest"
+        configuration.tenantId = "test1"
+        return configuration
+    }
+
+    private fun buildConnectionFactory(configuration: DeploymentConfiguration): ConnectionFactory {
+        val connectionFactory = ConnectionFactory()
+        connectionFactory.host = configuration.serviceBus!!.host
+        connectionFactory.username = configuration.serviceBusUsername
+        connectionFactory.password = configuration.serviceBusPassword
+        connectionFactory.virtualHost =
+            if (configuration.serviceBus!!.path.isNullOrBlank()) "/" else configuration.serviceBus!!.path
+        connectionFactory.port = 5672
+        connectionFactory.connectionTimeout = configuration.timeout!!.toMillis().toInt()
+        connectionFactory.useNio()
+        return connectionFactory
     }
 }
 

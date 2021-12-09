@@ -1,4 +1,4 @@
-package org.openmedstack.messaging.rabbitmq
+package org.openmedstack
 
 class ManualResetEvent(open: Boolean = false) {
     private val monitor = Object()

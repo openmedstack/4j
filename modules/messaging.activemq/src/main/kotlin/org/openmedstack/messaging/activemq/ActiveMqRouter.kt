@@ -1,9 +1,6 @@
-package org.openmedstack.messaging.rabbitmq
+package org.openmedstack.messaging.activemq
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.rabbitmq.client.AMQP
-import com.rabbitmq.client.Channel
-import com.rabbitmq.client.Connection
 import io.cloudevents.core.builder.CloudEventBuilder
 import io.cloudevents.core.provider.EventFormatProvider
 import io.cloudevents.jackson.JsonFormat
@@ -17,17 +14,20 @@ import java.net.URI
 import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import javax.jms.*
+import javax.jms.Queue
 
-class RabbitMqRouter(
+class ActiveMqRouter(
     connection: Connection,
-    private val serviceLookup: ILookupServices,
+    private val _serviceLookup: ILookupServices,
     private val _topicProvider: IProvideTopic,
     private val _mapper: ObjectMapper
 ) : IRouteCommands, AutoCloseable {
     private val _waitBuffer: HashMap<String, ManualResetEvent> = HashMap()
     private val _responseBuffer: HashMap<String, CommandResponse> = HashMap()
-    private val _channel: Channel = connection.createChannel()
-    private val _queue: AMQP.Queue.DeclareOk = _channel.queueDeclare()
+    private val _channel: Session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
+    private val _queue = _channel.createTemporaryQueue()
+    private val _consumer: MessageConsumer = _channel.createConsumer(_queue)
 
     override fun <T> send(
         command: T,
@@ -36,7 +36,7 @@ class RabbitMqRouter(
         if (command.correlationId.isNullOrBlank()) {
             CompletableFuture.failedFuture<CommandResponse>(RuntimeException("Missing correlation id"))
         }
-        return serviceLookup.lookup(command::class.java).thenComposeAsync { uri ->
+        return _serviceLookup.lookup(command::class.java).thenComposeAsync { uri ->
             if (uri == null) {
                 CompletableFuture.failedFuture<CommandResponse>(RuntimeException("No service endpoint found"))
             }
@@ -44,22 +44,11 @@ class RabbitMqRouter(
             val messageId = UUID.randomUUID().toString()
             val waitHandle = ManualResetEvent(false)
             _waitBuffer[messageId] = waitHandle
-            val properties =
-                AMQP.BasicProperties.Builder()
-                    .deliveryMode(2)
-                    .replyTo(_queue.queue)
-                    .correlationId(command.correlationId)
-                    .messageId(messageId)
-                    .headers(headers)
-                    .build()
-            _channel.basicPublish(
-                "",
-                uri!!.path,
-                true,
-                true,
-                properties,
-                getMessageBytes(messageId, command, properties)
-            )
+            val msg = getMessage(messageId, command, headers)
+            val producer = _channel.createProducer(Queue { uri!!.path })
+            producer.deliveryMode = DeliveryMode.PERSISTENT
+            producer.send(msg)
+            producer.close()
             waitHandle.waitOne()
             val result = _responseBuffer.remove(messageId)
             if (result != null) {
@@ -70,11 +59,11 @@ class RabbitMqRouter(
         }
     }
 
-    private fun <T> getMessageBytes(
+    private fun <T> getMessage(
         id: String,
         command: T,
-        properties: AMQP.BasicProperties
-    ): ByteArray where T : DomainCommand {
+        headers: Map<String, Any>
+    ): TextMessage where T : DomainCommand {
         val topic = _topicProvider.get(command::class.java)
         val event = CloudEventBuilder.v1()
             .withId(id)
@@ -83,29 +72,53 @@ class RabbitMqRouter(
             .withData("application/json+${topic}") {
                 _mapper.writeValueAsString(command).toByteArray(StandardCharsets.UTF_8)
             }
-            .withExtension("reply_to", properties.replyTo)
-            .withExtension("correlation_id", properties.correlationId)
+            .withSubject(topic)
+            .withTime(command.timestamp)
+            .withExtension("reply_to", _queue.queueName)
+            .withExtension("correlation_id", command.correlationId!!)
             .build()
 
-        return EventFormatProvider
-            .getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE)!!
-            .serialize(event)
+        val msg = _channel.createTextMessage(
+            String(
+                EventFormatProvider
+                    .getInstance()
+                    .resolveFormat(JsonFormat.CONTENT_TYPE)!!
+                    .serialize(event)
+            )
+        )
+        msg.jmsCorrelationID = command.correlationId
+        msg.jmsReplyTo = _queue
+        msg.jmsMessageID = id
+        msg.jmsTimestamp = event.time!!.toEpochSecond()
+        for (entry in headers) {
+            msg.setObjectProperty(entry.key, entry.value)
+        }
+        return msg
     }
 
     override fun close() {
+        _queue.delete()
+        _consumer.close()
         _channel.close()
     }
 
     init {
-        _channel.basicConsume(_queue.queue, true, { _, delivery ->
-            val messageId = delivery.properties.messageId
-            val response = _mapper.readValue(delivery.body, CommandResponse::class.java)
+        _consumer.messageListener = MessageListener { msg ->
+            val messageId = msg.jmsMessageID
             val waitHandle = _waitBuffer.remove(messageId)
             if (waitHandle != null) {
-                _responseBuffer[messageId] = response
+                _responseBuffer[messageId] = when (msg::class.java) {
+                    TextMessage::class.java -> _mapper.readValue((msg as TextMessage).text, CommandResponse::class.java)
+                    BytesMessage::class.java -> {
+                        val m = (msg as BytesMessage)
+                        val buffer = ByteArray(m.bodyLength.toInt())
+                        m.readBytes(buffer)
+                        _mapper.readValue(buffer, CommandResponse::class.java)
+                    }
+                    else -> CommandResponse("", 0, "Unsupported message type", msg.jmsCorrelationID)
+                }
                 waitHandle.set()
             }
-        }) { _: String -> }
+        }
     }
 }

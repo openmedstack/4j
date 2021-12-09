@@ -1,7 +1,7 @@
 package org.openmedstack
 
 import java.net.URI
-import java.time.Period
+import java.time.Duration
 import java.util.regex.Pattern
 
 class DeploymentConfiguration {
@@ -13,7 +13,7 @@ class DeploymentConfiguration {
     var serviceBusPassword: String? = null
     var queueName: String? = null
     var connectionString: String? = null
-    var timeout: Period? = null
+    var timeout: Duration = Duration.ofMinutes(5)
     var tokenService: String? = null
     var validIssuers: List<String> = ArrayList()
     var clientId: String? = null

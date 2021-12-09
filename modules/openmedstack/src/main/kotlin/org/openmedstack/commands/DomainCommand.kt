@@ -1,24 +1,29 @@
 package org.openmedstack.commands
 
-import java.time.Instant
 import org.openmedstack.ICorrelate
+import java.time.OffsetDateTime
 
-abstract class DomainCommand protected constructor(aggregateId: String, version: Int, timeStamp: Instant, correlationId: String?) : ICorrelate {
-    private val _timestamp: Instant
+abstract class DomainCommand protected constructor(
+    aggregateId: String,
+    version: Int,
+    timeStamp: OffsetDateTime,
+    correlationId: String?
+) : ICorrelate {
+    private val _timestamp: OffsetDateTime
     private val _aggregateId: String
     private val _version: Int
     private val _correlationId: String?
     override val correlationId: String?
         get() = _correlationId
-    val timestamp:Instant
+    val timestamp: OffsetDateTime
         get() = _timestamp
-    val aggregateId:String
+    val aggregateId: String
         get() = _aggregateId
-    val version : Int
+    val version: Int
         get() = _version
 
     init {
-        require(!(timeStamp === Instant.MIN)) { "Cannot use min time" }
+        require(timeStamp != OffsetDateTime.MIN) { "Cannot use min time" }
         _aggregateId = aggregateId
         _version = version
         _timestamp = timeStamp

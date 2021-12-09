@@ -1,9 +1,6 @@
-package org.openmedstack.messaging.rabbitmq
+package org.openmedstack.messaging.activemq
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.rabbitmq.client.AMQP
-import com.rabbitmq.client.Channel
-import com.rabbitmq.client.Connection
 import io.cloudevents.core.builder.CloudEventBuilder
 import io.cloudevents.core.provider.EventFormatProvider
 import io.cloudevents.jackson.JsonFormat
@@ -16,28 +13,30 @@ import java.time.Clock
 import java.time.OffsetDateTime
 import java.util.*
 import java.util.concurrent.CompletableFuture
+import javax.jms.Connection
+import javax.jms.Session
+import javax.jms.TextMessage
+import javax.jms.Topic
 
-class RabbitMqPublisher constructor(
+class ActiveMqPublisher constructor(
     connection: Connection,
     private val _topicProvider: IProvideTopic,
     private val _mapper: ObjectMapper
 ) : IPublishEvents, AutoCloseable {
-    private val _channel: Channel = connection.createChannel()
+    private val _channel: Session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
 
     override fun <T : BaseEvent> publish(evt: T, headers: HashMap<String, Any>): CompletableFuture<*> {
         return CompletableFuture.supplyAsync {
             val topic = _topicProvider.get(evt::class.java)
-            _channel.basicPublish(
-                topic,
-                "",
-                AMQP.BasicProperties.Builder().build(),
-                getMessageBytes(UUID.randomUUID().toString(), evt)
-            )
-            topic
+            var producer = _channel.createProducer(Topic { topic })
+            val msg = getMessage(UUID.randomUUID().toString(), evt)
+            producer.send(msg)
+            producer.close()
+            CompletableFuture.completedFuture(true)
         }
     }
 
-    private fun <T> getMessageBytes(id: String, evt: T): ByteArray where T : BaseEvent {
+    private fun <T> getMessage(id: String, evt: T): TextMessage where T : BaseEvent {
         val topic = _topicProvider.getCanonical(evt::class.java)
         val event = CloudEventBuilder.v1()
             .withId(id)
@@ -51,11 +50,19 @@ class RabbitMqPublisher constructor(
         if (!evt.correlationId.isNullOrBlank()) {
             event.withExtension("correlation_id", evt.correlationId!!)
         }
-
-        return EventFormatProvider
-            .getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE)!!
-            .serialize(event.build())
+        val ce = event.build()
+        val msg = _channel.createTextMessage(
+            String(
+                EventFormatProvider
+                    .getInstance()
+                    .resolveFormat(JsonFormat.CONTENT_TYPE)!!
+                    .serialize(ce)
+            )
+        )
+        msg.jmsMessageID = id
+        msg.jmsTimestamp = ce.time.toEpochSecond()
+        msg.jmsCorrelationID = evt.correlationId
+        return msg
     }
 
     override fun close() {
