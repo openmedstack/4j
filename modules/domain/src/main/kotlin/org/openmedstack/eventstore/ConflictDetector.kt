@@ -1,11 +1,8 @@
 package org.openmedstack.eventstore
 
-import org.openmedstack.Tuple
-import java.util.function.Function
-
 class ConflictDetector : IDetectConflicts {
-    private val _actions: HashMap<Class<*>, HashMap<Class<*>, Function<Tuple<Any, Any>, Boolean>>> = HashMap()
-    override fun <TUncommitted, TCommitted> register(handler: Function<Tuple<TUncommitted, TCommitted>, Boolean>) {
+    private val _actions: HashMap<Class<*>, HashMap<Class<*>, (Any, Any) -> Boolean>> = HashMap()
+    override fun <TUncommitted, TCommitted> register(handler: (TUncommitted, TCommitted) -> Boolean) {
         try {
             val typeVariables = this.javaClass.getDeclaredMethod("register").typeParameters
             val uncommitted = Class.forName(typeVariables[0].typeName)
@@ -13,8 +10,11 @@ class ConflictDetector : IDetectConflicts {
             if (!_actions.containsKey(uncommitted)) {
                 _actions[uncommitted] = HashMap()
             }
-            _actions[uncommitted]!![committed] =
-                Function { t: Tuple<Any, Any> -> with(handler) { apply(Tuple(t.a as TUncommitted, t.b as TCommitted)) } }
+
+            val func: (Any, Any) -> Boolean = { u: Any, c: Any -> handler.invoke(u as TUncommitted, c as TCommitted) }
+
+            _actions[uncommitted]!![committed] = func
+
         } catch (n: NoSuchMethodException) {
         } catch (n: ClassNotFoundException) {
         }
@@ -39,6 +39,6 @@ class ConflictDetector : IDetectConflicts {
         val map = _actions[uncommitted.javaClass]
         return if (!map!!.containsKey(committed.javaClass)) {
             true
-        } else map!![committed.javaClass]!!.apply(Tuple(uncommitted, committed))
+        } else map!![committed.javaClass]!!.invoke(uncommitted, committed)
     }
 }
