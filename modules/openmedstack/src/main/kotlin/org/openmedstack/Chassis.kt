@@ -3,20 +3,19 @@ package org.openmedstack
 import org.openmedstack.commands.CommandResponse
 import org.openmedstack.commands.DomainCommand
 import org.openmedstack.events.BaseEvent
-import java.util.*
 import java.util.concurrent.CompletableFuture
 
 class Chassis private constructor(val configuration: DeploymentConfiguration) : AutoCloseable {
     private val _metadata: HashMap<String, Any> = HashMap()
     private val _packages: ArrayList<Package> = ArrayList()
-    private var _builder: ((DeploymentConfiguration, Set<Package>) -> Service)? = null
+    private var _builder: ((DeploymentConfiguration, Array<Package>) -> Service)? = null
     private var _service: Service? = null
 
     fun start(): CompletableFuture<*> {
         if (_service != null) {
             return CompletableFuture.completedFuture(true)
         }
-        _service = _builder!!.invoke(configuration, _packages.toSet())
+        _service = _builder!!.invoke(configuration, _packages.toTypedArray())
         return _service!!.start()
     }
 
@@ -44,7 +43,7 @@ class Chassis private constructor(val configuration: DeploymentConfiguration) : 
         return _service!!.resolve(type)
     }
 
-    fun withServiceBuilder(builder: (DeploymentConfiguration, Set<Package>) -> Service): Chassis {
+    fun withServiceBuilder(builder: (DeploymentConfiguration, Array<Package>) -> Service): Chassis {
         _builder = builder
         return this
     }

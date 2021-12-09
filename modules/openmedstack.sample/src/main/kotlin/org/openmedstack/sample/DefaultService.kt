@@ -11,7 +11,8 @@ import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IPublishEvents
 import java.util.concurrent.CompletableFuture
 
-class DefaultService(vararg modules: Module?) : Service {
+class DefaultService(vararg modules: Module) : Service {
+    //((DeploymentConfiguration, Array<Package>) -> Module)) : Service {
     private val _injector: Injector
 
     override fun start(): CompletableFuture<*> {

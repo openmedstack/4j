@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.inject.AbstractModule
 import com.google.inject.Inject
 import com.google.inject.Provider
+import com.google.inject.multibindings.Multibinder
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
@@ -16,13 +17,13 @@ import org.openmedstack.messaging.rabbitmq.RabbitMqListener
 import org.openmedstack.messaging.rabbitmq.RabbitMqPublisher
 import org.openmedstack.messaging.rabbitmq.RabbitMqRouter
 import java.io.IOException
-import java.lang.reflect.Constructor
 import java.net.URISyntaxException
 import java.security.KeyManagementException
 import java.security.NoSuchAlgorithmException
 import java.util.concurrent.TimeoutException
 
-class RabbitMqModule(private val _configuration: DeploymentConfiguration) : AbstractModule() {
+class RabbitMqModule(private val _configuration: DeploymentConfiguration, vararg packages: Package) : AbstractModule() {
+    private val _packages = packages
     override fun configure() {
         bind(ConnectionFactory::class.java).toProvider(Provider { connectionFactory }).asEagerSingleton()
         bind(Connection::class.java).toProvider(ConnectionProvider::class.java)
@@ -42,14 +43,28 @@ class RabbitMqModule(private val _configuration: DeploymentConfiguration) : Abst
                 ObjectMapper::class.java
             )
         )
-        bind(RabbitMqListener::class.java).toConstructor(RabbitMqListener::class.java.constructors[0] as Constructor<RabbitMqListener>)
+        val packageBinder = Multibinder.newSetBinder(binder(), Package::class.java)
+        for (p in _packages) {
+            packageBinder.addBinding().toInstance(p)
+        }
+        bind(RabbitMqListener::class.java).toConstructor(
+            RabbitMqListener::class.java.getConstructor(
+                Connection::class.java,
+                DeploymentConfiguration::class.java,
+                IProvideTopic::class.java,
+                Set::class.java,
+                Set::class.java,
+                ObjectMapper::class.java,
+                Set::class.java
+            )
+        ).asEagerSingleton()
     }
 
     @get:Throws(NoSuchAlgorithmException::class, KeyManagementException::class, URISyntaxException::class)
     private val connectionFactory: ConnectionFactory
         get() {
             val conn = ConnectionFactory()
-            conn.setUri(_configuration.serviceBus)
+            conn.setUri(_configuration.serviceBus!!)
             return conn
         }
 }

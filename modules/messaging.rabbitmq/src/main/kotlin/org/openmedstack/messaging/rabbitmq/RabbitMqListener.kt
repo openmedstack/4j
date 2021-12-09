@@ -23,7 +23,7 @@ class RabbitMqListener constructor(
     eventHandlers: Set<IHandleEvents>,
     commandHandlers: Set<IHandleCommands>,
     mapper: ObjectMapper,
-    vararg packages: Package
+    packages: Set<Package>
 ) : AutoCloseable {
     private val _mapper: ObjectMapper
     private val _configuration: DeploymentConfiguration
@@ -33,7 +33,7 @@ class RabbitMqListener constructor(
         _channel = connection.createChannel()
         _mapper = mapper
         _configuration = configuration
-        val classes = ReflectionTool.findAllClasses(*packages).toList()
+        val classes: List<Class<*>> = ReflectionTool.findAllClasses(*packages.toTypedArray()).toList()
         subscribeEventHandlers(classes, eventHandlers)
         subscribeCommandHandlers(classes, commandHandlers)
     }

@@ -21,7 +21,8 @@ class RabbitMqListenerTest {
     fun canConnectToBroker() {
         val configuration = createConfiguration()
         val connectionFactory = buildConnectionFactory(configuration)
-        val topicProvider = EnvironmentTopicProvider(ConfigurationTenantProvider(configuration))
+        val tenantProvider = ConfigurationTenantProvider(configuration)
+        val topicProvider = EnvironmentTopicProvider(tenantProvider, HashMapTopics())
         val connection = connectionFactory.newConnection()
         val mapper = createMapper()
         val waitHandle = ManualResetEvent()
@@ -32,7 +33,7 @@ class RabbitMqListenerTest {
             setOf(TestEventHandler(waitHandle)),
             setOf(),
             mapper,
-            TestEvent::class.java.`package`
+            setOf(TestEvent::class.java.`package`)
         )
 
         val publisher = RabbitMqPublisher(connection, topicProvider, mapper)

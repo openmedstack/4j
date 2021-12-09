@@ -27,17 +27,18 @@ class RabbitMqPublisher constructor(
     override fun <T : BaseEvent> publish(evt: T, headers: HashMap<String, Any>): CompletableFuture<*> {
         return CompletableFuture.supplyAsync {
             val topic = _topicProvider.get(evt::class.java)
+            val (bytes, props) = getMessageBytes(UUID.randomUUID().toString(), evt)
             _channel.basicPublish(
                 topic,
                 "",
-                AMQP.BasicProperties.Builder().build(),
-                getMessageBytes(UUID.randomUUID().toString(), evt)
+                props,
+                bytes
             )
             topic
         }
     }
 
-    private fun <T> getMessageBytes(id: String, evt: T): ByteArray where T : BaseEvent {
+    private fun <T> getMessageBytes(id: String, evt: T): Pair<ByteArray, AMQP.BasicProperties> where T : BaseEvent {
         val topic = _topicProvider.getCanonical(evt::class.java)
         val event = CloudEventBuilder.v1()
             .withId(id)
@@ -51,11 +52,20 @@ class RabbitMqPublisher constructor(
         if (!evt.correlationId.isNullOrBlank()) {
             event.withExtension("correlation_id", evt.correlationId!!)
         }
-
-        return EventFormatProvider
-            .getInstance()
-            .resolveFormat(JsonFormat.CONTENT_TYPE)!!
-            .serialize(event.build())
+        val ce = event.build()
+        val properties = AMQP.BasicProperties.Builder().messageId(id).correlationId(evt.correlationId ?: "")
+            .contentEncoding("application/json+${topic}").type(JsonFormat.CONTENT_TYPE).build()
+        return try {
+            Pair(
+                EventFormatProvider
+                    .getInstance()
+                    .resolveFormat(JsonFormat.CONTENT_TYPE)!!
+                    .serialize(ce), properties
+            )
+        } catch (e: Exception) {
+            println(e.message)
+            Pair(byteArrayOf(), properties)
+        }
     }
 
     override fun close() {

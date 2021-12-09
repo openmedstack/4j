@@ -23,7 +23,7 @@ import javax.jms.Connection
 import javax.jms.ConnectionFactory
 import javax.jms.Session
 
-class RabbitMqModule(private val _configuration: DeploymentConfiguration) : AbstractModule() {
+class ActiveMqModule(private val _configuration: DeploymentConfiguration) : AbstractModule() {
     override fun configure() {
         bind(ConnectionFactory::class.java).toProvider(Provider { connectionFactory }).asEagerSingleton()
         bind(Connection::class.java).toProvider(ConnectionProvider::class.java)

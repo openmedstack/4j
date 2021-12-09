@@ -8,7 +8,9 @@ import java.net.http.HttpClient
 
 class EventStoreModule : AbstractModule() {
     override fun configure() {
-        bind(HttpClient::class.java).toInstance(HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build())
+        bind(HttpClient::class.java).toInstance(
+            HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build()
+        )
         bind(IConstructAggregates::class.java).to(ContainerAggregateFactory::class.java)
         bind(IConstructSagas::class.java).to(ContainerSagaFactory::class.java)
         bind(IStoreEvents::class.java).to(HttpEventStore::class.java)
@@ -28,10 +30,6 @@ class EventStoreModule : AbstractModule() {
                 IConstructSagas::class.java
             )
         )
-        bind(IProvideTenant::class.java).toInstance(object : IProvideTenant {
-            override val tenantName: String
-                get() = "test"
-        })
         bind(IDetectConflicts::class.java).to(ConflictDetector::class.java)
     }
 }
