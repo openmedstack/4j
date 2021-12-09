@@ -34,12 +34,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-            <version>5.0.1</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.openmedstack</groupId>
             <artifactId>domain.guice</artifactId>
             <version>1.0-SNAPSHOT</version>
@@ -54,6 +48,12 @@
         <dependency>
             <groupId>org.openmedstack</groupId>
             <artifactId>messaging.rabbitmq.guice</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.openmedstack</groupId>
+            <artifactId>openmedstack.guice</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>

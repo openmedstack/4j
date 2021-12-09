@@ -18,6 +18,7 @@
         <module>modules/openmedstack.sample</module>
         <module>modules/messaging.activemq</module>
         <module>modules/messaging.activemq.guice</module>
+        <module>modules/openmedstack.guice</module>
     </modules>
     <dependencies>
         <dependency>
