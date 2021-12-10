@@ -13,6 +13,7 @@ import org.openmedstack.commands.IRouteCommands
 import org.openmedstack.domain.guice.EventStoreModule
 import org.openmedstack.events.BaseEvent
 import org.openmedstack.events.IPublishEvents
+import org.openmedstack.guice.DefaultsModule
 import org.openmedstack.messaging.guice.DomainModule
 import org.openmedstack.messaging.guice.InMemoryMessagingModule
 import java.net.URI
@@ -40,13 +41,13 @@ class ChassisTest {
 
     @Test
     fun start() {
-        chassis!!.withServiceBuilder { _: DeploymentConfiguration, p: Array<Package> -> getService(p) }
+        chassis!!.withServiceBuilder { c: DeploymentConfiguration, p: Array<Package> -> getService(c, p) }
         chassis!!.start()
     }
 
     @Test
     fun send() {
-        chassis!!.withServiceBuilder { _: DeploymentConfiguration, p: Array<Package> -> getService(p) }
+        chassis!!.withServiceBuilder { c: DeploymentConfiguration, p: Array<Package> -> getService(c, p) }
         chassis!!.start()
         val s = chassis!!.send(TestCommand("test"))
         Assert.assertTrue(s is CompletableFuture<*>)
@@ -58,7 +59,7 @@ class ChassisTest {
 
     @Test
     fun resolve() {
-        chassis!!.withServiceBuilder { _, p -> getService(p) }
+        chassis!!.withServiceBuilder { c, p -> getService(c, p) }
         chassis!!.start()
         val s = chassis!!.resolve(String::class.java)
         Assert.assertTrue(s is String)
@@ -73,13 +74,14 @@ class ChassisTest {
         }
     }
 
-    private fun getService(p: Array<Package>): Service {
+    private fun getService(c: DeploymentConfiguration, p: Array<Package>): Service {
         return object : Service {
             var injector = Guice.createInjector(
                 DomainModule(*p),
                 EventStoreModule(),
                 InMemoryMessagingModule(),
-                TestModule()
+                TestModule(),
+                DefaultsModule(c)
             )
 
             override fun start(): CompletableFuture<*> {
