@@ -1,17 +1,12 @@
 package org.openmedstack.messaging.activemq
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import io.cloudevents.core.builder.CloudEventBuilder
-import io.cloudevents.core.provider.EventFormatProvider
-import io.cloudevents.jackson.JsonFormat
 import org.openmedstack.ILookupServices
-import org.openmedstack.IProvideTopic
 import org.openmedstack.ManualResetEvent
 import org.openmedstack.commands.CommandResponse
 import org.openmedstack.commands.DomainCommand
 import org.openmedstack.commands.IRouteCommands
+import org.openmedstack.messaging.CloudEventFactory
 import java.net.URI
-import java.nio.charset.StandardCharsets
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import javax.jms.*
@@ -20,9 +15,9 @@ import javax.jms.Queue
 class ActiveMqRouter(
     connection: Connection,
     private val _serviceLookup: ILookupServices,
-    private val _topicProvider: IProvideTopic,
-    private val _mapper: ObjectMapper
+    private val _mapper: CloudEventFactory
 ) : IRouteCommands, AutoCloseable {
+    private val _source: URI
     private val _waitBuffer: HashMap<String, ManualResetEvent> = HashMap()
     private val _responseBuffer: HashMap<String, CommandResponse> = HashMap()
     private val _channel: Session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE)
@@ -64,27 +59,10 @@ class ActiveMqRouter(
         command: T,
         headers: Map<String, Any>
     ): TextMessage where T : DomainCommand {
-        val topic = _topicProvider.get(command::class.java)
-        val event = CloudEventBuilder.v1()
-            .withId(id)
-            .withType(JsonFormat.CONTENT_TYPE)
-            .withSource(URI.create("http://localhost"))
-            .withData("application/json+${topic}") {
-                _mapper.writeValueAsString(command).toByteArray(StandardCharsets.UTF_8)
-            }
-            .withSubject(topic)
-            .withTime(command.timestamp)
-            .withExtension("reply_to", _queue.queueName)
-            .withExtension("correlation_id", command.correlationId!!)
-            .build()
+        val event = _mapper.toCloudEvent(id, command, _source)
 
         val msg = _channel.createTextMessage(
-            String(
-                EventFormatProvider
-                    .getInstance()
-                    .resolveFormat(JsonFormat.CONTENT_TYPE)!!
-                    .serialize(event)
-            )
+            _mapper.asString(event)
         )
         msg.jmsCorrelationID = command.correlationId
         msg.jmsReplyTo = _queue
@@ -102,18 +80,24 @@ class ActiveMqRouter(
         _channel.close()
     }
 
+
     init {
+        val tmp = URI.create(connection.toString())
+        _source = URI(tmp.scheme, null, tmp.host, tmp.port, tmp.path, null, null)
         _consumer.messageListener = MessageListener { msg ->
             val messageId = msg.jmsMessageID
             val waitHandle = _waitBuffer.remove(messageId)
             if (waitHandle != null) {
                 _responseBuffer[messageId] = when (msg::class.java) {
-                    TextMessage::class.java -> _mapper.readValue((msg as TextMessage).text, CommandResponse::class.java)
+                    TextMessage::class.java -> _mapper.read(
+                        (msg as TextMessage).text.toByteArray(),
+                        CommandResponse::class.java
+                    )
                     BytesMessage::class.java -> {
                         val m = (msg as BytesMessage)
                         val buffer = ByteArray(m.bodyLength.toInt())
                         m.readBytes(buffer)
-                        _mapper.readValue(buffer, CommandResponse::class.java)
+                        _mapper.read(buffer, CommandResponse::class.java)
                     }
                     else -> CommandResponse("", 0, "Unsupported message type", msg.jmsCorrelationID)
                 }

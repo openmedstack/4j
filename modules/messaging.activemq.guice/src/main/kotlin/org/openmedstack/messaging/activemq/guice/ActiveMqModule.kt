@@ -1,6 +1,5 @@
 package org.openmedstack.messaging.activemq.guice
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.inject.AbstractModule
 import com.google.inject.Inject
 import com.google.inject.Provider
@@ -10,6 +9,7 @@ import org.openmedstack.ILookupServices
 import org.openmedstack.IProvideTopic
 import org.openmedstack.commands.IRouteCommands
 import org.openmedstack.events.IPublishEvents
+import org.openmedstack.messaging.CloudEventFactory
 import org.openmedstack.messaging.activemq.ActiveMqListener
 import org.openmedstack.messaging.activemq.ActiveMqPublisher
 import org.openmedstack.messaging.activemq.ActiveMqRouter
@@ -32,18 +32,18 @@ class ActiveMqModule(private val _configuration: DeploymentConfiguration) : Abst
             ActiveMqPublisher::class.java.getConstructor(
                 Connection::class.java,
                 IProvideTopic::class.java,
-                ObjectMapper::class.java
+                CloudEventFactory::class.java
             )
         )
         bind(IRouteCommands::class.java).toConstructor(
             ActiveMqRouter::class.java.getConstructor(
                 Connection::class.java,
                 ILookupServices::class.java,
-                IProvideTopic::class.java,
-                ObjectMapper::class.java
+                CloudEventFactory::class.java
             )
         )
         bind(ActiveMqListener::class.java).toConstructor(ActiveMqListener::class.java.constructors[0] as Constructor<ActiveMqListener>)
+            .asEagerSingleton()
     }
 
     @get:Throws(NoSuchAlgorithmException::class, KeyManagementException::class, URISyntaxException::class)

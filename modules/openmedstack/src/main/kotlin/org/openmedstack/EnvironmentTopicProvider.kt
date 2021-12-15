@@ -26,13 +26,13 @@ class EnvironmentTopicProvider constructor(
     private val _topicMap: IMapTopics
 ) :
     IProvideTopic {
-    override fun <T> get(type: Class<T>): String {
-        val canonical = getCanonical(type);
+    override fun <T> getTenantSpecific(type: Class<T>): String {
+        val canonical = get(type);
         var tenant = _tenantProvider.tenantName;
         return tenant + canonical
     }
 
-    override fun <T> getCanonical(type: Class<T>): String {
+    override fun <T> get(type: Class<T>): String {
         var fullName = type.typeName
         if (_topicMap.contains(fullName)) {
             return _topicMap[fullName]!!;

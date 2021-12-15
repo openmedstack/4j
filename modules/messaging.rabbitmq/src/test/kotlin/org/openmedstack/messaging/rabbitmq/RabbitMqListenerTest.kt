@@ -11,6 +11,7 @@ import com.rabbitmq.client.ConnectionFactory
 import org.junit.Test
 import org.openmedstack.*
 import org.openmedstack.events.DomainEvent
+import org.openmedstack.messaging.CloudEventFactory
 import java.io.IOException
 import java.net.URI
 import java.time.OffsetDateTime
@@ -24,7 +25,7 @@ class RabbitMqListenerTest {
         val tenantProvider = ConfigurationTenantProvider(configuration)
         val topicProvider = EnvironmentTopicProvider(tenantProvider, HashMapTopics())
         val connection = connectionFactory.newConnection()
-        val mapper = createMapper()
+        val mapper = createMapper(configuration)
         val waitHandle = ManualResetEvent()
         val listener = RabbitMqListener(
             connection,
@@ -47,13 +48,16 @@ class RabbitMqListenerTest {
         connection.close()
     }
 
-    private fun createMapper(): ObjectMapper {
+    private fun createMapper(configuration: DeploymentConfiguration): CloudEventFactory {
         val mapper = ObjectMapper()
         val module = SimpleModule()
         module.addDeserializer(OffsetDateTime::class.java, CustomDeserializer(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
         module.addSerializer(OffsetDateTime::class.java, CustomSerializer(DateTimeFormatter.ISO_OFFSET_DATE_TIME))
         mapper.registerModule(module)
-        return mapper
+        return CloudEventFactory(
+            EnvironmentTopicProvider(ConfigurationTenantProvider(configuration), HashMapTopics()),
+            mapper
+        )
     }
 
     private fun createConfiguration(): DeploymentConfiguration {
