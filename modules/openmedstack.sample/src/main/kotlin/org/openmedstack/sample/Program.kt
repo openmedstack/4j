@@ -20,7 +20,7 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.regex.Pattern
 
-fun main(args: Array<String>) {
+fun main() {
     println("Starting")
     val configuration = DeploymentConfiguration()
     configuration.name = "sample"

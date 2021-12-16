@@ -19,6 +19,7 @@
         <module>modules/messaging.activemq</module>
         <module>modules/messaging.activemq.guice</module>
         <module>modules/openmedstack.guice</module>
+        <module>modules/messaging.aws</module>
     </modules>
     <dependencies>
         <dependency>

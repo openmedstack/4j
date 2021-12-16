@@ -3,7 +3,6 @@ package org.openmedstack.messaging.rabbitmq
 import com.rabbitmq.client.AMQP
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
-import io.cloudevents.core.provider.EventFormatProvider
 import io.cloudevents.jackson.JsonFormat
 import org.openmedstack.IProvideTopic
 import org.openmedstack.events.BaseEvent
@@ -43,10 +42,7 @@ class RabbitMqPublisher constructor(
             .contentEncoding("application/json+${event.type}").type(JsonFormat.CONTENT_TYPE).build()
         return try {
             Pair(
-                EventFormatProvider
-                    .getInstance()
-                    .resolveFormat(JsonFormat.CONTENT_TYPE)!!
-                    .serialize(event), properties
+                _mapper.toBytes(event), properties
             )
         } catch (e: Exception) {
             println(e.message)

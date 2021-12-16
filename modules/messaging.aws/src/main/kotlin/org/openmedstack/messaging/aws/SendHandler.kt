@@ -1,34 +1,40 @@
-package org.openmedstack.messaging.rabbitmq
+package org.openmedstack.messaging.aws
 
-import com.rabbitmq.client.AMQP
-import com.rabbitmq.client.Channel
-import com.rabbitmq.client.DeliverCallback
-import com.rabbitmq.client.Delivery
-import io.cloudevents.jackson.JsonFormat
-import org.openmedstack.IProvideTopic
 import org.openmedstack.MessageHeadersImpl
 import org.openmedstack.commands.DomainCommand
 import org.openmedstack.commands.IHandleCommands
 import org.openmedstack.messaging.CloudEventFactory
+import software.amazon.awssdk.services.sqs.SqsClient
+import software.amazon.awssdk.services.sqs.model.Message
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue
 import java.net.URI
 import java.util.*
 
 internal class SendHandler constructor(
+    loader: () -> List<Message>,
     private val _mapper: CloudEventFactory,
     private val _types: Set<Class<*>>,
     private val _handlers: Set<IHandleCommands>,
-    private val _channel: Channel,
-    private val _topicProvider: IProvideTopic,
+    private val _channel: SqsClient,
     private val _source: URI
-) : MessageHandler(_mapper), DeliverCallback {
+) : MessageHandler(_mapper.mapper), AutoCloseable {
+    private val timer: Timer = Timer()
 
-    override fun handle(tag: String?, d: Delivery) {
+    init {
+        timer.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                loader.invoke().forEach { d -> handle(d) }
+            }
+        }, 1000L, 1000L)
+    }
+
+    fun handle(d: Message) {
         try {
-            val (codec, inputEvent, headers) = readDelivery(d)
+            val (inputEvent, headers) = readDelivery(d)
 
             for (type in _types) {
                 var handled = false
-                val value = _mapper.mapper.readValue(inputEvent.traverse(codec), type)
+                val value = _mapper.mapper.readValue(inputEvent, type)
                 if (value is DomainCommand) {
                     for (handler in _handlers) {
                         try {
@@ -52,29 +58,19 @@ internal class SendHandler constructor(
     private fun sendMessage(
         handler: IHandleCommands,
         value: DomainCommand,
-        headers: HashMap<String, Any>
+        headers: Map<String, MessageAttributeValue>
     ): Boolean {
         val response =
             handler.handle(value, MessageHeadersImpl(headers)).join()
-        val props = AMQP.BasicProperties.Builder()
-            .headers(headers)
-            .messageId()
-            .correlationId(value.correlationId ?: "")
-            .contentEncoding("application/json+${_topicProvider.get(value::class.java)}")
-            .type(JsonFormat.CONTENT_TYPE)
-            .build()
-        val cloudEvent = _mapper.toCloudEvent(
-            UUID.randomUUID().toString(),
-            response,
-            _source
-        )
-
-        _channel.basicPublish(
-            "",
-            headers["reply-to"].toString(),
-            props,
-            _mapper.toBytes(cloudEvent)
-        )
+        val cloudEvent = _mapper.toCloudEvent(UUID.randomUUID().toString(), response, _source)
+        val body = _mapper.asString(cloudEvent)
+        _channel.sendMessage { b ->
+            b.queueUrl(headers["reply-to"].toString()).messageBody(body).messageAttributes(headers)
+        }
         return true
+    }
+
+    override fun close() {
+        timer.cancel()
     }
 }
