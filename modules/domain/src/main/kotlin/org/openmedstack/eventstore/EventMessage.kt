@@ -1,12 +1,14 @@
 package org.openmedstack.eventstore
 
-class EventMessage(body: Any, headers: HashMap<String, Any>) {
-    private val _body: Any
+import org.openmedstack.events.BaseEvent
+
+class EventMessage(body: BaseEvent, headers: HashMap<String, Any>) {
+    private val _body: BaseEvent
     private val _headers: HashMap<String, Any>
     val headers: HashMap<String, Any>
         get() = _headers
 
-    val body: Any
+    val body: BaseEvent
         get() = _body
 
     init {

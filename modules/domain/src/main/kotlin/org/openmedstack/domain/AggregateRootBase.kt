@@ -33,8 +33,8 @@ abstract class AggregateRootBase<TMemento : Memento> protected constructor(id: S
     }
 
     @Throws(HandlerForDomainEventNotFoundException::class)
-    override fun applyEvent(event: Any) {
-        _registeredRoutes.dispatch(event)
+    override fun applyEvent(event: DomainEvent) {
+        _registeredRoutes.dispatch(event, event.javaClass)
         _version++
     }
 

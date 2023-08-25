@@ -3,10 +3,10 @@ package org.openmedstack.eventstore
 import org.openmedstack.IProvideTenant
 import org.openmedstack.domain.HandlerForDomainEventNotFoundException
 import org.openmedstack.domain.Saga
+import org.openmedstack.events.BaseEvent
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
-import kotlin.collections.HashMap
 
 class DelegateSagaRepository(private val _tenantId: IProvideTenant, private val _eventStore: IStoreEvents, private val _factory: IConstructSagas) : SagaRepository {
     override fun <TSaga : Saga> getById(type: Class<TSaga>, sagaId: String): CompletableFuture<TSaga> {
@@ -55,7 +55,7 @@ class DelegateSagaRepository(private val _tenantId: IProvideTenant, private val 
                     for ((key, value) in headers) {
                         stream.uncommittedHeaders[key] = value
                     }
-                    saga.uncommittedEvents.forEach(Consumer { o: Any -> stream.add(EventMessage(o, HashMap())) })
+                    saga.uncommittedEvents.forEach(Consumer { o: BaseEvent -> stream.add(EventMessage(o, HashMap())) })
                     stream
                 }
     }

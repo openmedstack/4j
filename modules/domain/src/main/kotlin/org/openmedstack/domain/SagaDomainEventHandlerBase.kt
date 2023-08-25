@@ -7,25 +7,26 @@ import org.openmedstack.eventstore.SagaRepository
 import java.util.concurrent.CompletableFuture
 
 abstract class SagaDomainEventHandlerBase<TSaga : Saga, TBaseEvent : BaseEvent> protected constructor(private val _repository: SagaRepository) :
-    IHandleEvents {
-    override fun handle(domainEvent: BaseEvent, headers: MessageHeaders): CompletableFuture<*> {
+        IHandleEvents {
+    @Suppress("UNCHECKED_CAST")
+    override fun handle(evt: BaseEvent, headers: MessageHeaders): CompletableFuture<*> {
         return try {
             val type = Class.forName(javaClass.typeParameters[0].typeName) as Class<TSaga>
-            beforeHandle(domainEvent as TBaseEvent, headers)
-                .thenComposeAsync { e: TBaseEvent ->
-                    _repository
-                        .getById(type, e.correlationId!!)
-                        .thenApplyAsync { s: TSaga -> Pair(s, e) }
-                }
-                .thenCompose { tuple: Pair<TSaga, TBaseEvent> ->
-                    try {
-                        tuple.first.transition(tuple.second as Any)
-                        return@thenCompose _repository.save(tuple.first) { }
-                            .thenComposeAsync { afterHandle(tuple.second, headers) }
-                    } catch (e: HandlerForDomainEventNotFoundException) {
-                        return@thenCompose CompletableFuture.completedFuture<TBaseEvent?>(null)
+            beforeHandle(evt as TBaseEvent, headers)
+                    .thenComposeAsync { e: TBaseEvent ->
+                        _repository
+                                .getById(type, e.correlationId!!)
+                                .thenApplyAsync { s: TSaga -> Pair(s, e) }
                     }
-                }
+                    .thenCompose { tuple: Pair<TSaga, TBaseEvent> ->
+                        try {
+                            tuple.first.transition(tuple.second as BaseEvent)
+                            return@thenCompose _repository.save(tuple.first) { }
+                                    .thenComposeAsync { afterHandle(tuple.second, headers) }
+                        } catch (e: HandlerForDomainEventNotFoundException) {
+                            return@thenCompose CompletableFuture.completedFuture<TBaseEvent?>(null)
+                        }
+                    }
         } catch (c: ClassNotFoundException) {
             throw RuntimeException(c)
         }

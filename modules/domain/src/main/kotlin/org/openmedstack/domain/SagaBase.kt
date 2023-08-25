@@ -19,17 +19,14 @@ abstract class SagaBase protected constructor(id: String, eventRouter: IRouteEve
         get() = _version
 
     @Throws(HandlerForDomainEventNotFoundException::class)
-    override fun transition(message: Any) {
-        if (!BaseEvent::class.java.isInstance(message)) {
-            return
-        }
-        _eventRouter.dispatch(message)
-        _uncommitted.add(message as BaseEvent)
+    override fun transition(message: BaseEvent) {
+        _eventRouter.dispatch(message, message.javaClass)
+        _uncommitted.add(message)
         _version += 1
     }
 
-    override val uncommittedEvents: Iterable<Any>
-        get() =  listOf<Any>(_uncommitted)
+    override val uncommittedEvents: Iterable<BaseEvent>
+        get() = _uncommitted
 
     override fun clearUncommittedEvents() {
         _uncommitted.clear()
@@ -55,3 +52,4 @@ abstract class SagaBase protected constructor(id: String, eventRouter: IRouteEve
         _id = id
     }
 }
+
