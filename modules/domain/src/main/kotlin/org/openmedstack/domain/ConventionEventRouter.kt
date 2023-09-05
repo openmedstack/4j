@@ -4,7 +4,6 @@ import org.openmedstack.events.BaseEvent
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
 import java.util.*
-import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
 
 class ConventionEventRouter(private val _throwOnApplyNotFound: Boolean, handlerSource: Any?) : IRouteEvents, AutoCloseable {
@@ -38,17 +37,26 @@ class ConventionEventRouter(private val _throwOnApplyNotFound: Boolean, handlerS
                 } catch (e: IllegalAccessException) {
                     /*empty*/
                 } catch (e: InvocationTargetException) {
+                    /*empty*/
                 }
             }
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     private fun <T : BaseEvent?> register(messageType: Class<*>, handler: Consumer<T>) {
-        _handlers[messageType] = Consumer { o: Any -> handler.accept(o as T) }
+        _handlers[messageType] = Consumer { o: Any ->
+            run {
+                val arg = o as T
+                if (arg != null) {
+                    handler.accept(arg)
+                }
+            }
+        }
     }
 
     @Throws(HandlerForDomainEventNotFoundException::class)
-    override fun dispatch(eventMessage: Any): CompletableFuture<*> {
+    override fun <T : BaseEvent> dispatch(eventMessage: T, type: Class<T>) {
         if (_handlers.containsKey(eventMessage.javaClass)) {
             _handlers[eventMessage.javaClass]!!.accept(eventMessage)
         } else {
@@ -56,7 +64,6 @@ class ConventionEventRouter(private val _throwOnApplyNotFound: Boolean, handlerS
                 throw HandlerForDomainEventNotFoundException("Aggregate of type '\${this}' raised an event of type \${eventMessage::class.java.name} but not handler could be found to handle the message.")
             }
         }
-        return CompletableFuture.completedFuture(true)
     }
 
     override fun close() {
@@ -67,3 +74,4 @@ class ConventionEventRouter(private val _throwOnApplyNotFound: Boolean, handlerS
         register(handlerSource)
     }
 }
+

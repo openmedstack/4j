@@ -4,6 +4,8 @@ import org.openmedstack.IProvideTenant
 import org.openmedstack.domain.Aggregate
 import org.openmedstack.domain.HandlerForDomainEventNotFoundException
 import org.openmedstack.domain.Memento
+import org.openmedstack.events.BaseEvent
+import org.openmedstack.events.DomainEvent
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.function.Consumer
@@ -12,51 +14,52 @@ class DelegateAggregateRepository(
         private val _tenantId: IProvideTenant,
         private val _eventStore: IStoreEvents,
         private val _snapshotStore: IAccessSnapshots,
-        private val _factory: IConstructAggregates) : Repository {
+        private val _factory: IConstructAggregates,
+) : Repository {
     override fun <TAggregate : Aggregate, TMemento : Memento> getById(type: Class<TAggregate>, mementoType: Class<Snapshot<TMemento>>, id: String): CompletableFuture<TAggregate> {
         return getById(type, mementoType, id, Int.MAX_VALUE)
     }
 
     override fun <TAggregate : Aggregate, TMemento : Memento> getById(
-        type: Class<TAggregate>,
-        mementoType: Class<Snapshot<TMemento>>,
-        id: String,
-        version: Int
+            type: Class<TAggregate>,
+            mementoType: Class<Snapshot<TMemento>>,
+            id: String,
+            version: Int,
     ): CompletableFuture<TAggregate> {
-        return getSnapshot(mementoType,_tenantId.tenantName, id, version)
-            .thenComposeAsync { snapshot: Snapshot<TMemento>? ->
-                openStream(_tenantId.tenantName, id, version, snapshot)
-                    .thenApplyAsync { stream: IEventStream ->
-                        val a = getAggregate<TAggregate, TMemento>(type, snapshot, stream)
-                        applyEventsToAggregate(version, stream, a)
-                        a as TAggregate
-                    }
-            }
+        return getSnapshot(mementoType, _tenantId.tenantName, id, version)
+                .thenComposeAsync { snapshot: Snapshot<TMemento>? ->
+                    openStream(_tenantId.tenantName, id, version, snapshot)
+                            .thenApplyAsync { stream: IEventStream ->
+                                val a = getAggregate<TAggregate, TMemento>(type, snapshot, stream)
+                                applyEventsToAggregate(version, stream, a)
+                                a
+                            }
+                }
     }
 
     @Throws(DuplicateCommitException::class)
     override fun <TAggregate : Aggregate, TMemento : Memento> save(
-        aggregate: TAggregate,
-        updateHeaders: Consumer<HashMap<String, Any>>
+            aggregate: TAggregate,
+            updateHeaders: Consumer<HashMap<String, Any>>,
     ): CompletableFuture<Boolean> {
 
         val headers = prepareHeaders(aggregate, updateHeaders)
         return prepareStream<TMemento>(_tenantId.tenantName, aggregate, headers)
-            .thenComposeAsync { stream: IEventStream ->
-                val commitId = UUID.randomUUID()
-                stream.commitChanges(commitId)
-            }
-            .thenApplyAsync { _ ->
-                aggregate.clearUncommittedEvents()
-                true
-            }
+                .thenComposeAsync { stream: IEventStream ->
+                    val commitId = UUID.randomUUID()
+                    stream.commitChanges(commitId)
+                }
+                .thenApplyAsync { _ ->
+                    aggregate.clearUncommittedEvents()
+                    true
+                }
     }
 
     private fun <TAggregate : Aggregate, TMemento : Memento> getAggregate(
-        type: Class<TAggregate>,
-        snapshot: Snapshot<TMemento>?,
-        stream: IEventStream
-    ): Aggregate {
+            type: Class<TAggregate>,
+            snapshot: Snapshot<TMemento>?,
+            stream: IEventStream,
+    ): TAggregate {
         val snapshot1 = snapshot?.payload as Memento
         return _factory.build(type, stream.streamId, snapshot1)
     }
@@ -66,32 +69,32 @@ class DelegateAggregateRepository(
     }
 
     private fun <T : Memento> openStream(
-        bucketId: String?,
-        id: String,
-        version: Int,
-        snapshot: Snapshot<T>?
+            bucketId: String?,
+            id: String,
+            version: Int,
+            snapshot: Snapshot<T>?,
     ): CompletableFuture<IEventStream> {
         return if (snapshot == null) _eventStore.openStream(bucketId, id, 0, version) else _eventStore.openStream(
-            snapshot,
-            version
+                snapshot,
+                version
         )
     }
 
     private fun <T : Memento> prepareStream(
-        bucketId: String?,
-        aggregate: Aggregate,
-        headers: HashMap<String, Any>
+            bucketId: String?,
+            aggregate: Aggregate,
+            headers: HashMap<String, Any>,
     ): CompletableFuture<IEventStream> {
         return openStream<T>(bucketId, aggregate.id, aggregate.version, null)
-            .thenApply { stream: IEventStream ->
-                for ((key, value) in headers) {
-                    stream.uncommittedHeaders[key] = value
+                .thenApply { stream: IEventStream ->
+                    for ((key, value) in headers) {
+                        stream.uncommittedHeaders[key] = value
+                    }
+                    for (uncommittedEvent in aggregate.uncommittedEvents) {
+                        stream.add(EventMessage(uncommittedEvent, headers))
+                    }
+                    stream
                 }
-                for (uncommittedEvent in aggregate.uncommittedEvents) {
-                    stream.add(EventMessage(uncommittedEvent, headers))
-                }
-                stream
-            }
     }
 //
 //    private fun throwOnConflict(stream: IEventStream, skip: Int): Boolean {
@@ -112,18 +115,20 @@ class DelegateAggregateRepository(
                 return
             }
             Arrays.stream(stream.committedEvents.toTypedArray()).map { x: EventMessage -> x.body }
-                .forEachOrdered { x: Any ->
-                    try {
-                        aggregate.applyEvent(x)
-                    } catch (e: HandlerForDomainEventNotFoundException) {
-                        throw RuntimeException(e)
+                    .filter { x: BaseEvent -> x is DomainEvent }
+                    .map { x: BaseEvent -> x as DomainEvent }
+                    .forEachOrdered { x: DomainEvent ->
+                        try {
+                            aggregate.applyEvent(x)
+                        } catch (e: HandlerForDomainEventNotFoundException) {
+                            throw RuntimeException(e)
+                        }
                     }
-                }
         }
 
         private fun prepareHeaders(
-            aggregate: Aggregate,
-            updateHeaders: Consumer<HashMap<String, Any>>
+                aggregate: Aggregate,
+                updateHeaders: Consumer<HashMap<String, Any>>,
         ): HashMap<String, Any> {
             val dictionary = HashMap<String, Any>()
             dictionary[AggregateTypeHeader] = aggregate.javaClass.typeName

@@ -11,7 +11,7 @@ class ConventionEventRouterTest {
         val handler = TestHandler()
         val router = ConventionEventRouter(true, handler)
         try {
-            router.dispatch(TestMessage("test", OffsetDateTime.now()))
+            router.dispatch(TestMessage("test", OffsetDateTime.now()), TestMessage::class.java)
         } catch (e: HandlerForDomainEventNotFoundException) {
             Assert.fail()
         }

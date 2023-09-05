@@ -8,6 +8,7 @@ abstract class EventHandlerBase<T> : IHandleEvents where T: BaseEvent {
         return Class.forName(javaClass.typeParameters[0].name).isAssignableFrom(type)
     }
 
+    @Suppress("UNCHECKED_CAST")
     override fun handle(evt: BaseEvent, headers: MessageHeaders): CompletableFuture<*> {
         return verifyUserToken(headers.userToken).thenApply { b: Boolean ->
             if (b) {
