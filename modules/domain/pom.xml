@@ -85,7 +85,7 @@
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <kotlin.version>1.6.0</kotlin.version>
+        <kotlin.version>1.8.20-RC</kotlin.version>
     </properties>
 
 </project>

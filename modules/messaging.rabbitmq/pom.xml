@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.rabbitmq</groupId>
             <artifactId>amqp-client</artifactId>
-            <version>5.14.0</version>
+            <version>5.16.0</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -83,7 +83,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <kotlin.version>1.6.0</kotlin.version>
+        <kotlin.version>1.8.20-RC</kotlin.version>
     </properties>
 
 </project>
